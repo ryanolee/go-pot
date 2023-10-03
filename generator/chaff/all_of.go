@@ -30,6 +30,17 @@ func mergeSchemaNode(metadata ParserMetadata, nodes ...SchemaNode) (SchemaNode, 
 	}
 
 	for _, node := range nodes {
+		if node == nil {
+			continue
+		}
+
+		if node.Ref != "" {
+			node, ok = metadata.ReferenceHandler.Lookup(node.Ref).SchemaNode
+			if !ok {
+				return SchemaNode{}, fmt.Errorf("Reference not found: %s", node.Ref)
+			}
+		}
+
 		// Merge Type
 		if node.Type.SingleType != "" {
 			mergedNode.Type.MultipleTypes = append(node.Type.MultipleTypes, node.Type.SingleType)
@@ -62,18 +73,31 @@ func mergeSchemaNode(metadata ParserMetadata, nodes ...SchemaNode) (SchemaNode, 
 			mergedNode.Enum = append(mergedNode.Enum, node.Enum...)
 		}
 
+		// Merge properties
+		for key, value := range node.Properties {
+			mergedNode.Properties[key] = mergeSchemaNode(metadata, mergedNode.Properties[key], value)
+		}
 
-		
+		for key, value := range node.PatternProperties {
+			mergedNode.PatternProperties[key] = mergeSchemaNode(metadata, mergedNode.PatternProperties[key], value)
+		}
+
+		// Merge array items - @todo: Is this how the schema spec works?
+		//                            for merging prefixItems?
+		for i := 0; i < len(node.PrefixItems); i++ {
+			mergedNode.PrefixItems[i] = mergeSchemaNode(metadata, mergedNode.PrefixItems[i], node.PrefixItems[i])
+		}
+
+		mergedNode.OneOf = append(mergedNode.OneOf, node.OneOf...)
+		mergedNode.AnyOf = append(mergedNode.AnyOf, node.AnyOf...)
+
+		mergedNode.AllOf = append(mergedNode.AllOf, node.AllOf...)
 	}
 	
 
 	return SchemaNode{}, nil
 }
 
-func mergeSchemaNodeMap(metadata ParserMetadata, nodeMap map[string]SchemaNode) (map[string]SchemaNode, error) {
-	return 
-}
-
-func mergeSchemaNodeArray(metadata ParserMetadata, nodeList ...SchemaNode) ([]SchemaNode, error) {
-	return 
+func mergeSchemaNodeMap(metadata ParserMetadata, currentNode SchemaNode, nodeMap map[string]SchemaNode) (map[string]SchemaNode, error) {
+	for key, node := range nodeMap {
 }
