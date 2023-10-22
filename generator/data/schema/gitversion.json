@@ -1,0 +1,5 @@
+{
+  "$ref": "https://raw.githubusercontent.com/GitTools/GitVersion/main/schemas/6.0/GitVersion.configuration.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GitVersion configuration schema"
+}

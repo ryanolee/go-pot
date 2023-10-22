@@ -2,9 +2,12 @@ package http
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
-//	"github.com/gofiber/fiber/v2/middleware/logger"
+	"go.uber.org/zap"
+
+	//	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"github.com/ryanolee/ryan-pot/generator"
 	"github.com/ryanolee/ryan-pot/rand"
@@ -18,7 +21,11 @@ type (
 )
 
 func Serve(cfg ServerConfig) error {
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		IdleTimeout: time.Second * 15,
+		ReduceMemoryUsage: true,
+	})
+	zap.ReplaceGlobals(zap.Must(zap.NewProduction()))
 	//app.Use(logger.New())
 
 	if(cfg.Debug) {
@@ -26,19 +33,28 @@ func Serve(cfg ServerConfig) error {
 	}
 
 	rand := rand.NewSeededRand(324234)
-	generator, err := generator.NewRobotsTxtGenerator(rand)
+	gen, err := generator.NewRobotsTxtGenerator(rand)
 	if err != nil {
 		return err
 	}
+
+	randGen, err := generator.NewConfigGenerator()
+	if err != nil {
+		return err
+	}
+
 	app.Get("/robots.txt", func(c *fiber.Ctx) error {
 		g := NewHttpStaller(&HttpStallerOptions{
-			Generator: generator,
+			Generator: gen,
 		})
 		return g.StallContextBuffer(c)
-		//return c.SendString(generator.Generate())
 	})
+
 	app.Get("/", func(c *fiber.Ctx) error {
-		return nil
+		g := NewHttpStaller(&HttpStallerOptions{
+			Generator: randGen,
+		})
+		return g.StallContextBuffer(c)
 	})
 
 	return app.Listen(fmt.Sprintf(":%d", cfg.Port))

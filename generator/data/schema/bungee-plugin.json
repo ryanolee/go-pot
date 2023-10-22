@@ -1,0 +1,51 @@
+{
+  "$id": "https://json.schemastore.org/bungee-plugin",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": true,
+  "definitions": {
+    "plugin-name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_\\.-]+$"
+    }
+  },
+  "properties": {
+    "name": {
+      "description": "The name of the plugin.",
+      "$ref": "#/definitions/plugin-name"
+    },
+    "main": {
+      "description": "Plugin main class.",
+      "type": "string",
+      "pattern": "^([a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][a-zA-Z\\d_$]*$"
+    },
+    "version": {
+      "description": "Plugin version.",
+      "type": "string"
+    },
+    "author": {
+      "description": "Plugin author.",
+      "type": "string"
+    },
+    "depends": {
+      "description": "Plugin hard dependencies.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/plugin-name"
+      }
+    },
+    "softDepends": {
+      "description": "Plugin soft dependencies.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/plugin-name"
+      }
+    },
+    "description": {
+      "description": "Optional description.",
+      "type": "string"
+    }
+  },
+  "required": ["name", "main"],
+  "title": "JSON schema for BungeeCord Plugin YAML",
+  "type": "object"
+}

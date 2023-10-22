@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "https://json.schemastore.org/vsconfig.json",
+  "properties": {
+    "version": {
+      "description": "The version of the component configuration file format.",
+      "type": "string",
+      "pattern": "^(\\d+\\.)?(\\d+\\.)?(\\d+\\.)?(\\d+)$"
+    },
+    "components": {
+      "type": "array",
+      "description": "An array of Visual Studio component names",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": ["components"],
+  "title": "JSON schema for Visual Studio component configuration files",
+  "type": "object"
+}

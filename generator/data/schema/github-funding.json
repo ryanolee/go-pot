@@ -1,0 +1,101 @@
+{
+  "$comment": "https://docs.github.com/en/github/administering-a-repository/displaying-a-sponsor-button-in-your-repository",
+  "$id": "https://json.schemastore.org/github-funding.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "definitions": {
+    "github_username": {
+      "type": "string",
+      "maxLength": 39,
+      "pattern": "^[a-zA-Z0-9](-?[a-zA-Z0-9])*$",
+      "examples": ["SampleUserName"]
+    },
+    "nullable_string": {
+      "type": ["string", "null"]
+    }
+  },
+  "description": "You can add a sponsor button in your repository to increase the visibility of funding options for your open source project.",
+  "properties": {
+    "community_bridge": {
+      "title": "CommunityBridge",
+      "description": "Project name on CommunityBridge.",
+      "$ref": "#/definitions/nullable_string",
+      "minLength": 1
+    },
+    "github": {
+      "title": "GitHub Sponsors",
+      "description": "Username or usernames on GitHub.",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/github_username"
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/github_username"
+          }
+        }
+      ]
+    },
+    "issuehunt": {
+      "title": "IssueHunt",
+      "description": "Username on IssueHunt.",
+      "$ref": "#/definitions/nullable_string",
+      "minLength": 1
+    },
+    "ko_fi": {
+      "title": "Ko-fi",
+      "description": "Username on Ko-fi.",
+      "$ref": "#/definitions/nullable_string",
+      "minLength": 1
+    },
+    "liberapay": {
+      "title": "Liberapay",
+      "description": "Username on Liberapay.",
+      "$ref": "#/definitions/nullable_string",
+      "minLength": 1
+    },
+    "open_collective": {
+      "title": "Open Collective",
+      "description": "Username on Open Collective.",
+      "$ref": "#/definitions/nullable_string",
+      "minLength": 1
+    },
+    "otechie": {
+      "title": "Otechie",
+      "description": "Username on Otechie.",
+      "$ref": "#/definitions/nullable_string",
+      "minLength": 1
+    },
+    "patreon": {
+      "title": "Patreon",
+      "description": "Username on Pateron.",
+      "$ref": "#/definitions/nullable_string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "tidelift": {
+      "title": "Tidelift",
+      "description": "Platform and package on Tidelift.",
+      "$ref": "#/definitions/nullable_string",
+      "pattern": "^(npm|pypi|rubygems|maven|packagist|nuget)/.+$"
+    },
+    "custom": {
+      "title": "Custom URL",
+      "description": "Link or links where funding is accepted on external locations.",
+      "type": ["string", "array", "null"],
+      "format": "uri-reference",
+      "items": {
+        "title": "Link",
+        "description": "Link to an external location.",
+        "type": "string",
+        "format": "uri-reference"
+      },
+      "uniqueItems": true
+    }
+  },
+  "title": "GitHub Funding",
+  "type": "object"
+}

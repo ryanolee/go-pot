@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "https://json.schemastore.org/libman.json",
+  "type": "object",
+  "properties": {
+    "libraries": {
+      "description": "A list of library references.",
+      "type": "array",
+      "items": { "$ref": "#/definitions/libraryEntry" }
+    },
+    "version": {
+      "description": "The syntax version of this config file. Can only be 1.0",
+      "enum": ["1.0"],
+      "default": "1.0"
+    }
+  },
+  "required": ["libraries"],
+  "allOf": [{ "$ref": "#/definitions/specifiedProviderOrDestination" }],
+  "definitions": {
+    "libraryEntry": {
+      "type": "object",
+      "required": ["library"],
+      "properties": {
+        "files": {
+          "description": "The file names of the individual files to copy to the project.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "library": {
+          "description": "The unique identifier of the library.",
+          "type": "string",
+          "minLength": 1
+        },
+        "destination": {
+          "description": "The relative folder path from this config file to the location where the files should be copied to.",
+          "type": "string",
+          "pattern": "^[^\\\\]+$"
+        },
+        "provider": {
+          "description": "The unique identifier of the provider",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "specifiedProviderOrDestination": {
+      "type": "object",
+      "properties": {
+        "libraries": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/libraryEntry" }
+        }
+      }
+    }
+  }
+}

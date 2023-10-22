@@ -6,6 +6,7 @@ require (
 	github.com/AnatolyRugalev/goregen v0.1.0
 	github.com/BurntSushi/toml v1.3.2
 	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d
+	github.com/go-faker/faker/v4 v4.2.0
 	github.com/spf13/cobra v1.7.0
 	github.com/thoas/go-funk v0.9.3
 )
@@ -18,7 +19,6 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.9.1 // indirect
-	github.com/go-faker/faker/v4 v4.2.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.14.0 // indirect
@@ -38,6 +38,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/ryanolee/go-chaff v0.0.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect

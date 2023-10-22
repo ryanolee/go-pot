@@ -16,12 +16,13 @@ type (
 	HttpStallerOptions struct {
 		Generator generator.Generator
 		TransferRate time.Duration
+		Request *fiber.Ctx
 	}
 )
 
 func NewHttpStaller(opts *HttpStallerOptions) *HttpStaller {
 	if opts.TransferRate == 0 {
-		opts.TransferRate = time.Millisecond * 75
+		opts.TransferRate = time.Millisecond * 2
 	}
 
 	return &HttpStaller{
@@ -43,9 +44,8 @@ func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
 				} else {
 					dataToWrite = []byte{data[i]}
 				}
-				
-
 				_, err := w.Write(dataToWrite)
+
 				if err != nil {
 					break
 				}
