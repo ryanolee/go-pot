@@ -2,21 +2,31 @@ package http
 
 import (
 	"bufio"
+	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ryanolee/ryan-pot/generator"
+	"go.uber.org/zap"
 )
+
 type (
 	HttpStaller struct {
-		generator generator.Generator
+		id           string
+		generator    generator.Generator
 		transferRate time.Duration
+
+		running     bool
+		runningLock sync.Mutex
+
+		deregisterChan chan *HttpStaller
 	}
 
 	HttpStallerOptions struct {
-		Generator generator.Generator
+		Id           string
+		Generator    generator.Generator
 		TransferRate time.Duration
-		Request *fiber.Ctx
+		Request      *fiber.Ctx
 	}
 )
 
@@ -26,33 +36,53 @@ func NewHttpStaller(opts *HttpStallerOptions) *HttpStaller {
 	}
 
 	return &HttpStaller{
-		generator: opts.Generator,
+		runningLock:  sync.Mutex{},
+		running:      false,
+		generator:    opts.Generator,
 		transferRate: opts.TransferRate,
 	}
 }
 
-// StallBuffer stalls the buffer by writing a chunk of data every 250ms
+// StallBuffer stalls the buffer by writing a chunk of data every N milliseconds
 func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
+	connId := ctx.Context().ConnID()
+	conn := ctx.Context().Conn()
+
 	ctx.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		logger := zap.L().Sugar()
 		for {
+
 			data := s.generator.GenerateChunk()
-			for i:=0; i<len(data); i++ {
+			logger.Infow("writing garbage data", "connId", connId, "transferRate", s.transferRate, "data", len(data))
+			for i := 0; i < len(data); i++ {
+				if !s.running {
+					logger.Infow("connection closed", "connId", connId, "transferRate", s.transferRate)
+					conn.Close()
+					break
+				}
+
 				dataToWrite := []byte{}
-				if(string(data[i:i+1]) == "\\n") {
+				if string(data[i:i+1]) == "\\n" {
 					dataToWrite = []byte("\\n")
 					i++
 				} else {
 					dataToWrite = []byte{data[i]}
 				}
+
 				_, err := w.Write(dataToWrite)
 
 				if err != nil {
+					s.deregisterChan <- s
+					s.Close()
 					break
 				}
 				err = w.Flush()
 				if err != nil {
+					s.deregisterChan <- s
+					s.Close()
 					break
 				}
+
 				time.Sleep(s.transferRate)
 			}
 		}
@@ -60,4 +90,13 @@ func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
 
 	return nil
 }
-	
+
+func (s *HttpStaller) Close() {
+	s.setRunning(false)
+}
+
+func (s *HttpStaller) setRunning(running bool) {
+	s.runningLock.Lock()
+	defer s.runningLock.Unlock()
+	s.running = running
+}

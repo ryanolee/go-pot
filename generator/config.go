@@ -25,7 +25,7 @@ type (
 	}
 )
 
-func NewConfigGenerator()(*ConfigGenerator, error){
+func NewConfigGenerator() (*ConfigGenerator, error) {
 	schemaDir, err := schemaFiles.ReadDir(schemaDir)
 
 	if err != nil {
@@ -36,7 +36,7 @@ func NewConfigGenerator()(*ConfigGenerator, error){
 	generators := make(map[string]*chaff.RootGenerator)
 	for _, dirEntry := range schemaDir {
 		logger.Infow("Parsing Schema File", "filename", dirEntry.Name())
-		
+
 		generator, err := parseSchemaFile(dirEntry)
 		if err != nil {
 			logger.Warnw("Failed to parse schema file", "filename", dirEntry.Name(), "error", err)
@@ -55,7 +55,7 @@ func NewConfigGenerator()(*ConfigGenerator, error){
 	}, nil
 }
 
-func parseSchemaFile(entry fs.DirEntry) (*chaff.RootGenerator, error){
+func parseSchemaFile(entry fs.DirEntry) (*chaff.RootGenerator, error) {
 	var contents []byte
 	var generator chaff.RootGenerator
 	var err error
@@ -79,12 +79,10 @@ func (g *ConfigGenerator) Generate() string {
 	rnd := rand.NewRandUtilFromTime()
 	key := funk.Keys(g.generators).([]string)[rnd.RandomInt(0, len(g.generators))]
 
-
 	responseData := g.generators[key].GenerateWithDefaults()
 	data, _ := json.Marshal(responseData)
 
-
-	zap.L().Sugar().Infow("gen", "size", len(data), "file", key)
+	zap.L().Sugar().Debug("gen", "size", len(data), "file", key)
 	return string(data)
 }
 
