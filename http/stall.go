@@ -12,7 +12,8 @@ import (
 
 type (
 	HttpStaller struct {
-		id           string
+		id           uint64
+		ipAddress    string
 		generator    generator.Generator
 		transferRate time.Duration
 
@@ -23,7 +24,6 @@ type (
 	}
 
 	HttpStallerOptions struct {
-		Id           string
 		Generator    generator.Generator
 		TransferRate time.Duration
 		Request      *fiber.Ctx
@@ -32,33 +32,37 @@ type (
 
 func NewHttpStaller(opts *HttpStallerOptions) *HttpStaller {
 	if opts.TransferRate == 0 {
-		opts.TransferRate = time.Millisecond * 2
+		opts.TransferRate = time.Millisecond * 75
 	}
 
 	return &HttpStaller{
 		runningLock:  sync.Mutex{},
-		running:      false,
+		running:      true,
 		generator:    opts.Generator,
 		transferRate: opts.TransferRate,
+		ipAddress:    opts.Request.IP(),
+		id:           opts.Request.Context().ConnID(),
 	}
+}
+
+func (s *HttpStaller) BindPool(deregisterChan chan *HttpStaller) {
+	s.deregisterChan = deregisterChan
 }
 
 // StallBuffer stalls the buffer by writing a chunk of data every N milliseconds
 func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
-	connId := ctx.Context().ConnID()
 	conn := ctx.Context().Conn()
 
 	ctx.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
 		logger := zap.L().Sugar()
 		for {
-
 			data := s.generator.GenerateChunk()
-			logger.Infow("writing garbage data", "connId", connId, "transferRate", s.transferRate, "data", len(data))
+			logger.Infow("writing garbage data", "connId", s.id, "transferRate", s.transferRate, "data", len(data))
 			for i := 0; i < len(data); i++ {
 				if !s.running {
-					logger.Infow("connection closed", "connId", connId, "transferRate", s.transferRate)
+					logger.Infow("connection closed", "connId", s.id, "transferRate", s.transferRate)
 					conn.Close()
-					break
+					return
 				}
 
 				dataToWrite := []byte{}
