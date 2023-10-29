@@ -1,9 +1,11 @@
-package http
+package stall
 
 import (
 	"fmt"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type (
@@ -16,20 +18,25 @@ type (
 	}
 
 	HttpStallerPoolOptions struct {
-		maximumConnections     int
-		maximumFileDescriptors int
+		MaximumConnections     int
+		MaximumFileDescriptors int
 	}
 )
 
 func NewHttpStallerPool(opts HttpStallerPoolOptions) *HttpStallerPool {
 	return &HttpStallerPool{
-		deregisterChan:     make(chan *HttpStaller, opts.maximumConnections),
+		deregisterChan:     make(chan *HttpStaller, opts.MaximumConnections),
 		stallers:           NewStallerCollection(),
-		maximumConnections: opts.maximumConnections,
+		maximumConnections: opts.MaximumConnections,
 	}
 }
 
-func (s *HttpStallerPool) Register(staller *HttpStaller) {
+func (s *HttpStallerPool) Register(staller *HttpStaller) error {
+	if s.stallers.Len() >= s.maximumConnections {
+		zap.L().Sugar().Warnw("maximum connections reached, cannot register staller")
+		return fmt.Errorf("maximum connections reached, cannot register staller")
+	}
+
 	// Bind pool to staller
 	staller.BindPool(s.deregisterChan)
 
@@ -39,6 +46,8 @@ func (s *HttpStallerPool) Register(staller *HttpStaller) {
 
 	// Add staller to pool
 	s.stallers.Add(staller)
+
+	return nil
 
 }
 

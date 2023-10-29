@@ -1,4 +1,4 @@
-package http
+package stall
 
 import (
 	"runtime/debug"

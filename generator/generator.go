@@ -1,5 +1,8 @@
 package generator
 type Generator interface{
-	Generate() string
-	GenerateChunk() string
+	Start() []byte
+	Generate() []byte
+	GenerateChunk() []byte
+	ChunkSeparator() []byte
+	End() []byte
 }

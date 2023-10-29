@@ -4,8 +4,10 @@ import (
 	"embed"
 	"log"
 	"regexp/syntax"
+	"strings"
 
 	"github.com/ryanolee/ryan-pot/internal/regen"
+	"github.com/ryanolee/ryan-pot/rand"
 	"gopkg.in/yaml.v3"
 
 	"github.com/thoas/go-funk"
@@ -33,19 +35,33 @@ type (
         SecretGenerator regen.Generator
     }
 
+    SecretGeneratorCollection struct {
+        Generators []*SecretGenerator
+    }
 )
+
+func NewSecretGeneratorCollection() *SecretGeneratorCollection {
+    return &SecretGeneratorCollection{
+        Generators: GetGenerators(),
+    }
+}
+
+func (c *SecretGeneratorCollection) GetRandomGenerator() *SecretGenerator {
+    rnd := rand.NewSeededRandFromTime()
+    return c.Generators[rnd.RandomInt(0, len(c.Generators))]
+}
 
 func NewGenerator(rule SecretGeneratorRule) *SecretGenerator {
     args := &regen.GeneratorArgs{
         Flags: syntax.PerlX,
-        MinUnboundedRepeatCount: 10,
+        MinUnboundedRepeatCount: 30,
     }
-    nameGenerator, err := regen.NewGenerator(rule.NameRegex, args)
+    nameGenerator, err := newRegexGenerator(rule.NameRegex, args)
     if err != nil {
         log.Fatalf("Failed to parse name generator for %s error given as: %s", rule.Name, err)
     }
 
-    secretGenerator, err := regen.NewGenerator(rule.SecretRegex, args)
+    secretGenerator, err := newRegexGenerator(rule.SecretRegex, args)
     if err != nil {
         log.Fatalf("Failed to parse secret generator for %s error given as: %s", rule.Name, err)
     }
@@ -55,6 +71,15 @@ func NewGenerator(rule SecretGeneratorRule) *SecretGenerator {
         NameGenerator: nameGenerator,
         SecretGenerator: secretGenerator,
     }
+}
+
+const fullStringLiteral = "[~{FULL_STOP_LITERAL}~]"
+func newRegexGenerator(pattern string, opts *regen.GeneratorArgs) (regen.Generator, error) {
+    pattern = strings.ReplaceAll(pattern, "\\.", fullStringLiteral)
+    pattern = strings.ReplaceAll(pattern, ".", "\\w")
+    pattern = strings.ReplaceAll(pattern, fullStringLiteral, "\\.")
+	
+	return regen.NewGenerator(pattern, opts)
 }
 
 func GetGenerators() []*SecretGenerator{

@@ -7,9 +7,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 
-	//	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"github.com/ryanolee/ryan-pot/generator"
+	"github.com/ryanolee/ryan-pot/http/encoder"
+	"github.com/ryanolee/ryan-pot/http/stall"
+	"github.com/ryanolee/ryan-pot/secrets"
 )
 
 type (
@@ -37,15 +39,19 @@ func Serve(cfg ServerConfig) error {
 	//	return err
 	//}
 
-	randGen, err := generator.NewConfigGenerator()
+	confGenerators, err := generator.NewConfigGeneratorCollection()
 	if err != nil {
 		return err
 	}
 
-	pool := NewHttpStallerPool(HttpStallerPoolOptions{
-		maximumConnections: 200,
+	// Connection Pool
+	pool := stall.NewHttpStallerPool(stall.HttpStallerPoolOptions{
+		MaximumConnections: 200,
 	})
 	pool.Start()
+
+	// Secret Generators
+	secretGenerators := secrets.NewSecretGeneratorCollection()
 
 	//app.Get("/robots.txt", func(c *fiber.Ctx) error {
 	//	g := NewHttpStaller(&HttpStallerOptions{
@@ -54,13 +60,20 @@ func Serve(cfg ServerConfig) error {
 	//	return g.StallContextBuffer(c)
 	//})
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		staller := NewHttpStaller(&HttpStallerOptions{
-			Generator:    randGen,
+	app.Get("/*", func(c *fiber.Ctx) error {
+		encoder := encoder.GetEncoderForPath(c.Path())
+		c.Response().Header.SetContentType(encoder.ContentType())
+		generator := generator.NewConfigGenerator(encoder, confGenerators, secretGenerators)
+		staller := stall.NewHttpStaller(&stall.HttpStallerOptions{
+			Generator:    generator,
 			Request:      c,
-			TransferRate: time.Millisecond * 75,
+			TransferRate: time.Millisecond * 1,
 		})
-		pool.Register(staller)
+		err := pool.Register(staller)
+		if err != nil {
+			return err
+		}
+
 		return staller.StallContextBuffer(c)
 	})
 
