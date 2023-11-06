@@ -1,7 +1,6 @@
 package stall
 
 import (
-	"runtime/debug"
 	"sync"
 
 	"go.uber.org/zap"
@@ -20,7 +19,6 @@ func NewStallerCollection() *StallerCollection {
 }
 
 func (c *StallerCollection) Add(staller *HttpStaller) {
-	zap.L().Sugar().Infow("Adding staller", "ipAddress", staller.ipAddress, "id", staller.id)
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -32,7 +30,7 @@ func (c *StallerCollection) Add(staller *HttpStaller) {
 }
 
 func (c *StallerCollection) Delete(staller *HttpStaller) {
-	zap.L().Sugar().Infow("Deleting staller", "ipAddress", staller.ipAddress, "id", staller.id)
+	zap.L().Sugar().Debugw("Deleting staller", "ipAddress", staller.ipAddress, "id", staller.id, "duration", staller.GetElapsedTime())
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -49,8 +47,6 @@ func (c *StallerCollection) PruneNByIp(count int) {
 	for i := 0; i < count; i++ {
 		c.PruneByIp()
 	}
-
-	debug.FreeOSMemory()
 }
 
 func (c *StallerCollection) Len() int {

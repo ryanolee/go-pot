@@ -34,7 +34,7 @@ func NewConfigGeneratorCollection() (*ConfigGeneratorCollection, error) {
 	logger := zap.L().Sugar()
 	generators := make(map[string]*chaff.RootGenerator)
 	for _, dirEntry := range schemaDir {
-		logger.Infow("Parsing Schema File", "filename", dirEntry.Name())
+		logger.Debug("Parsing Schema File", "filename", dirEntry.Name())
 
 		generator, err := parseSchemaFile(dirEntry)
 		if err != nil {
@@ -43,7 +43,7 @@ func NewConfigGeneratorCollection() (*ConfigGeneratorCollection, error) {
 		}
 
 		for path, err := range generator.Metadata.Errors {
-			logger.Warnw("Issue when parsing schema file", "filename", dirEntry.Name(), "path", path, "error", err)
+			logger.Debug("Issue when parsing schema file", "filename", dirEntry.Name(), "path", path, "error", err)
 		}
 
 		generators[dirEntry.Name()] = generator

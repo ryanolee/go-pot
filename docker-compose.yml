@@ -1,6 +1,63 @@
-version: "3"
+version: "2.8"
 services:
-  app:
-    build: .
+  ryan-pot-node-1:
+    container_name: ryan-pot-node-1
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    volumes:
+      - .:/app:ro
     ports:
-      - "8080:8080"
+      - "8080:80"
+    environment:
+      - DOCKER_IP_ADDRESS=10.5.0.4
+      - DOCKER_KNOWN_PEERS=10.5.0.5
+    networks:
+      ryan-pot-network:
+        ipv4_address: 10.5.0.4
+
+  ryan-pot-node-2:
+    container_name: ryan-pot-node-2
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    volumes:
+      - .:/app:ro
+    ports:
+      - "8081:80"
+    environment:
+      - DOCKER_IP_ADDRESS=10.5.0.5
+      - DOCKER_KNOWN_PEERS=10.5.0.6
+    networks:
+      ryan-pot-network:
+        ipv4_address: 10.5.0.5
+
+  ryan-pot-node-3:
+    container_name: ryan-pot-node-3
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    volumes:
+      - .:/app:ro
+    ports:
+      - "8082:80"
+    environment:
+      - DOCKER_IP_ADDRESS=10.5.0.6
+      - DOCKER_KNOWN_PEERS=10.5.0.4
+    networks:
+      ryan-pot-network:
+        ipv4_address: 10.5.0.6
+networks:
+  ryan-pot-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
+
+
+
+    

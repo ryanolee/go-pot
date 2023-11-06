@@ -7,9 +7,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 
-	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"github.com/ryanolee/ryan-pot/generator"
 	"github.com/ryanolee/ryan-pot/http/encoder"
+	"github.com/ryanolee/ryan-pot/http/gossip"
+	"github.com/ryanolee/ryan-pot/http/logging"
+	"github.com/ryanolee/ryan-pot/http/metrics"
 	"github.com/ryanolee/ryan-pot/http/stall"
 	"github.com/ryanolee/ryan-pot/secrets"
 )
@@ -22,26 +24,22 @@ type (
 )
 
 func Serve(cfg ServerConfig) error {
+	// Setup server
 	app := fiber.New(fiber.Config{
 		IdleTimeout:       time.Second * 15,
 		ReduceMemoryUsage: true,
 	})
-	zap.ReplaceGlobals(zap.Must(zap.NewProduction()))
-	//app.Use(logger.New())
 
-	if cfg.Debug {
-		app.Use(pprof.New())
-	}
+	// Setup logging
+	logger := logging.UseLogger(app)
+	zap.ReplaceGlobals(logger)
 
-	//rand := rand.NewSeededRand(324234)
-	//gen, err := generator.NewRobotsTxtGenerator(rand)
-	//if err != nil {
-	//	return err
-	//}
-
+	// Initialize generators
 	confGenerators, err := generator.NewConfigGeneratorCollection()
+	secretGenerators := secrets.NewSecretGeneratorCollection()
+
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	// Connection Pool
@@ -50,24 +48,47 @@ func Serve(cfg ServerConfig) error {
 	})
 	pool.Start()
 
-	// Secret Generators
-	secretGenerators := secrets.NewSecretGeneratorCollection()
+	// Timeout watcher
+	watcher := metrics.NewTimeoutWatcher()
 
-	//app.Get("/robots.txt", func(c *fiber.Ctx) error {
-	//	g := NewHttpStaller(&HttpStallerOptions{
-	//		Generator: gen,
-	//	})
-	//	return g.StallContextBuffer(c)
-	//})
+	// Meberlist setup
+	actionHandler := gossip.NewBroadcastActionHandler(watcher)
+	client, err := gossip.NewMemberList(&gossip.MemberlistOpts{
+		OnAction:     actionHandler.Handle,
+		SuppressLogs: true,
+	})
+
+	if err != nil {
+		zap.L().Sugar().Errorw("Failed to create memberlist client", "error", err)
+	} else {
+		watcher.BindActionDispatcher(client)
+	}
+
+	// Setup routes
+	app.Get("/robots.txt", func(c *fiber.Ctx) error {
+		return c.SendString("User-agent: *\nDisallow: /")
+	})
 
 	app.Get("/*", func(c *fiber.Ctx) error {
 		encoder := encoder.GetEncoderForPath(c.Path())
 		c.Response().Header.SetContentType(encoder.ContentType())
 		generator := generator.NewConfigGenerator(encoder, confGenerators, secretGenerators)
+		ipAddress := c.IP()
+		timeout := watcher.GetTimeout(ipAddress)
+
 		staller := stall.NewHttpStaller(&stall.HttpStallerOptions{
 			Generator:    generator,
 			Request:      c,
-			TransferRate: time.Millisecond * 1,
+			TransferRate: time.Millisecond * 75,
+			Timeout:      timeout,
+			OnTimeout: func(s *stall.HttpStaller) {
+				logger.Sugar().Infow("Timeout", "ip", ipAddress, "duration", s.GetElapsedTime())
+				watcher.RecordResponse(ipAddress, s.GetElapsedTime(), false)
+			},
+			OnClose: func(s *stall.HttpStaller) {
+				logger.Sugar().Infow("Timeout", "ip", ipAddress, "duration", s.GetElapsedTime())
+				watcher.RecordResponse(ipAddress, s.GetElapsedTime(), true)
+			},
 		})
 		err := pool.Register(staller)
 		if err != nil {
