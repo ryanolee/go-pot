@@ -13,6 +13,7 @@ services:
     environment:
       - DOCKER_IP_ADDRESS=10.5.0.4
       - DOCKER_KNOWN_PEERS=10.5.0.5
+      - PUSH_GATEWAY_ADDRESS=http://10.5.0.9:9091
     networks:
       ryan-pot-network:
         ipv4_address: 10.5.0.4
@@ -30,6 +31,7 @@ services:
     environment:
       - DOCKER_IP_ADDRESS=10.5.0.5
       - DOCKER_KNOWN_PEERS=10.5.0.6
+      - PUSH_GATEWAY_ADDRESS=http://10.5.0.9:9091
     networks:
       ryan-pot-network:
         ipv4_address: 10.5.0.5
@@ -47,9 +49,48 @@ services:
     environment:
       - DOCKER_IP_ADDRESS=10.5.0.6
       - DOCKER_KNOWN_PEERS=10.5.0.4
+      - PUSH_GATEWAY_ADDRESS=http://10.5.0.9:9091
     networks:
       ryan-pot-network:
         ipv4_address: 10.5.0.6
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    volumes:
+      - ./docker/prometheus:/etc/prometheus
+    networks:
+      ryan-pot-network:
+        ipv4_address: 10.5.0.7
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+    volumes:
+      - ./docker/grafana:/etc/grafana/provisioning/datasources
+    networks:
+      ryan-pot-network:
+        ipv4_address: 10.5.0.8
+  
+  prom_pushgateway:
+    image: prom/pushgateway
+    container_name: prom_pushgateway
+    ports: 
+      - 9091:9091
+  
+    networks:
+      ryan-pot-network:
+        ipv4_address: 10.5.0.9
+
 networks:
   ryan-pot-network:
     driver: bridge

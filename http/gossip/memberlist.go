@@ -27,6 +27,7 @@ type (
 		delegate     *MessageDelegate
 		shutdownChan chan bool
 		onAction     func(*action.BroadcastAction)
+		IpAddress    string
 	}
 
 	NodeInfo struct {
@@ -47,6 +48,8 @@ func NewMemberList(opts *MemberlistOpts) (*Memberlist, error) {
 		}
 	} else if inDockerContainer() {
 		nodeInfo = gatherDockerNodeInfo()
+	} else {
+		return nil, errors.New("not running in a container")
 	}
 
 	// CFG initial setup
@@ -100,17 +103,25 @@ func NewMemberList(opts *MemberlistOpts) (*Memberlist, error) {
 		delegate:     msgDelegate,
 		shutdownChan: make(chan bool),
 		onAction:     opts.OnAction,
+		IpAddress:    nodeInfo.IpAddress,
 	}
 
 	memberList.ListenForBroadcastActions()
 	return memberList, nil
 }
 
+// GetIpAddress returns the IP address of the current node
+func (m *Memberlist) GetIpAddress() string {
+	return m.client.LocalNode().Addr.String()
+}
+
+// Broadcasts a message to peer nodes in the cluster
 func (m *Memberlist) Broadcast(broadcast *action.BroadcastAction) {
 	zap.L().Sugar().Infow("Broadcasting action", "action", broadcast.Action, "data", broadcast.Data)
 	m.delegate.Broadcasts.QueueBroadcast(broadcast)
 }
 
+// ListenForBroadcastActions listens for broadcast actions from other nodes in the cluster
 func (m *Memberlist) ListenForBroadcastActions() {
 	go func() {
 		for {

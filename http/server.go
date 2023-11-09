@@ -2,6 +2,9 @@ package http
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -34,14 +37,6 @@ func Serve(cfg ServerConfig) error {
 	logger := logging.UseLogger(app)
 	zap.ReplaceGlobals(logger)
 
-	// Initialize generators
-	confGenerators, err := generator.NewConfigGeneratorCollection()
-	secretGenerators := secrets.NewSecretGeneratorCollection()
-
-	if err != nil {
-		panic(err)
-	}
-
 	// Connection Pool
 	pool := stall.NewHttpStallerPool(stall.HttpStallerPoolOptions{
 		MaximumConnections: 200,
@@ -64,6 +59,33 @@ func Serve(cfg ServerConfig) error {
 		watcher.BindActionDispatcher(client)
 	}
 
+	// Setup metrics
+	telemetry, err := metrics.NewTelemetry(&metrics.TelemetryInput{
+		NodeName: fmt.Sprintf("go-pot-%s", client.GetIpAddress()),
+	})
+
+	if err != nil {
+		zap.L().Sugar().Errorw("Failed to create telemetry", "error", err)
+	} else {
+		telemetry.Start()
+	}
+
+	// Initialize generators
+	confGenerators, err := generator.NewConfigGeneratorCollection()
+	secretGenerators := secrets.NewSecretGeneratorCollection(&secrets.SecretGeneratorCollectionInput{
+		OnGenerate: func() {
+			if telemetry == nil {
+				return
+			}
+
+			telemetry.TrackGeneratedSecrets(1)
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
 	// Setup routes
 	app.Get("/robots.txt", func(c *fiber.Ctx) error {
 		return c.SendString("User-agent: *\nDisallow: /")
@@ -84,10 +106,20 @@ func Serve(cfg ServerConfig) error {
 			OnTimeout: func(s *stall.HttpStaller) {
 				logger.Sugar().Infow("Timeout", "ip", ipAddress, "duration", s.GetElapsedTime())
 				watcher.RecordResponse(ipAddress, s.GetElapsedTime(), false)
+
+				if telemetry == nil {
+					return
+				}
+				telemetry.TrackWastedTime(s.GetElapsedTime())
 			},
 			OnClose: func(s *stall.HttpStaller) {
 				logger.Sugar().Infow("Timeout", "ip", ipAddress, "duration", s.GetElapsedTime())
 				watcher.RecordResponse(ipAddress, s.GetElapsedTime(), true)
+
+				if telemetry == nil {
+					return
+				}
+				telemetry.TrackWastedTime(s.GetElapsedTime())
 			},
 		})
 		err := pool.Register(staller)
@@ -97,6 +129,16 @@ func Serve(cfg ServerConfig) error {
 
 		return staller.StallContextBuffer(c)
 	})
+
+	go func() {
+		shutdownChannel := make(chan os.Signal, 1)
+		signal.Notify(shutdownChannel, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+		<-shutdownChannel
+		zap.L().Sugar().Warnw("Shutting down server")
+		client.Shutdown()
+		pool.Stop()
+		telemetry.Stop()
+	}()
 
 	return app.Listen(fmt.Sprintf(":%d", cfg.Port))
 }
