@@ -13,6 +13,7 @@ type (
 		// Map of connection ID's to map to HttpStaller
 		stallers           *StallerCollection
 		deregisterChan     chan *HttpStaller
+		stopChan           chan bool
 		maximumConnections int
 		registrationMutex  sync.Mutex
 	}
@@ -58,6 +59,8 @@ func (s *HttpStallerPool) Start() {
 			select {
 			case staller := <-s.deregisterChan:
 				s.stallers.Delete(staller)
+			case <-s.stopChan:
+				return
 			}
 		}
 	}()
@@ -68,9 +71,24 @@ func (s *HttpStallerPool) Start() {
 			select {
 			case <-time.After(time.Second):
 				s.Prune()
+			case <-s.stopChan:
+				return
 			}
 		}
 	}()
+}
+
+func (s *HttpStallerPool) Stop() {
+	zap.L().Sugar().Warnw("Stopping staller pool")
+	for _, ipMap := range s.stallers.stallers {
+		for _, staller := range ipMap {
+			staller.Close()
+		}
+	}
+
+	time.Sleep(time.Second * 2)
+	s.stopChan <- true
+	zap.L().Sugar().Warnw("Stopped staller pool")
 }
 
 func (s *HttpStallerPool) Prune() {

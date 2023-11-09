@@ -1,5 +1,6 @@
 package secrets
-const secretsToInject = 5
+
+const secretsToInject = 4
 
 func InjectSecrets(generators *SecretGeneratorCollection, data interface{}) interface{} {
 	dataMap, ok := data.(map[string]interface{})
@@ -8,13 +9,14 @@ func InjectSecrets(generators *SecretGeneratorCollection, data interface{}) inte
 	}
 
 	for i := 0; i < secretsToInject; i++ {
+		generators.onGenerate()
 		generator := generators.GetRandomGenerator()
-		dataMap[generator.NameGenerator.Generate()] = generator.SecretGenerator.Generate() 
+		dataMap[generator.NameGenerator.Generate()] = generator.SecretGenerator.Generate()
 	}
-	
+
 	for key, value := range dataMap {
 		dataMap[key] = InjectSecrets(generators, value)
 	}
-	
+
 	return dataMap
 }
