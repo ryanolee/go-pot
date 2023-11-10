@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -16,24 +17,48 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-type TestStackProps struct {
-	awscdk.StackProps
-}
+const (
+	metricsRegion   = "eu-west-1"
+	nodesPerCluster = 48
+)
 
-func NewPotStackStack(scope constructs.Construct, id string, props *TestStackProps) awscdk.Stack {
+var (
+	potRegions = []string{"eu-west-1", "us-east-1", "ap-northeast-1"}
+)
+
+type (
+	MetricsServerCreds struct {
+		Username *string
+		Password *string
+	}
+	MetricsStackProps struct {
+		StackProps         awscdk.StackProps
+		MetricsServerCreds *MetricsServerCreds
+	}
+	MetricsStack struct {
+		Stack         awscdk.Stack
+		MetricsServer awsec2.Instance
+	}
+
+	PotStackProps struct {
+		StackProps         awscdk.StackProps
+		MetricsServerCreds *MetricsServerCreds
+		MetricsServer      awsec2.Instance
+		NodeCount          int
+	}
+)
+
+func NewMetricsStack(scope constructs.Construct, id string, props *MetricsStackProps) MetricsStack {
 	var sprops awscdk.StackProps
 	if props != nil {
 		sprops = props.StackProps
 	}
+
+	sprops.CrossRegionReferences = jsii.Bool(true)
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	_, filename, _, ok := runtime.Caller(1)
-	if !ok {
-		panic("unable to obtain filepath")
-	}
-
 	vpc := awsec2.NewVpc(stack, jsii.String("Vpc"), &awsec2.VpcProps{
-		IpAddresses: awsec2.IpAddresses_Cidr(jsii.String("172.31.0.0/24")),
+		IpAddresses: awsec2.IpAddresses_Cidr(jsii.String("172.31.1.0/24")),
 		MaxAzs:      jsii.Number(1),
 		NatGateways: jsii.Number(0),
 		SubnetConfiguration: &[]*awsec2.SubnetConfiguration{
@@ -53,7 +78,7 @@ func NewPotStackStack(scope constructs.Construct, id string, props *TestStackPro
 	pushGatewaySg.AddIngressRule(awsec2.Peer_AnyIpv4(), awsec2.Port_Tcp(jsii.Number(9093)), jsii.String("Ingress from prometheus (Internet)"), jsii.Bool(false))
 
 	pushGateway := awsec2.NewInstance(stack, jsii.String("PrometheusMetricsNode"), &awsec2.InstanceProps{
-		InstanceType: awsec2.NewInstanceType(jsii.String("t3.micro")),
+		InstanceType: awsec2.NewInstanceType(jsii.String("t3.small")),
 		MachineImage: awsec2.NewAmazonLinuxImage(&awsec2.AmazonLinuxImageProps{
 			Generation: awsec2.AmazonLinuxGeneration_AMAZON_LINUX_2,
 		}),
@@ -172,14 +197,46 @@ WantedBy=multi-user.target" > /etc/systemd/system/prometheus.service`),
 	}" > /etc/nginx/conf.d/pushgateway.conf`),
 		jsii.String(`sudo yum install httpd-tools -y`),
 		awscdk.Fn_Sub(jsii.String("sudo htpasswd -c -b /etc/nginx/.htpasswd ${USERNAME} ${PASSWORD}"), &map[string]*string{
-			"USERNAME": jsii.String("ryan-pot"),
+			"USERNAME": props.MetricsServerCreds.Username,
 			// @todo Pull this from Secrets Manager
-			"PASSWORD": jsii.String("SOME_SECRET"),
+			"PASSWORD": props.MetricsServerCreds.Password,
 		}),
 		jsii.String("sudo service nginx restart"),
 	)
 
 	pushGateway.Role().AddManagedPolicy(awsiam.ManagedPolicy_FromAwsManagedPolicyName(jsii.String("AmazonSSMManagedInstanceCore")))
+	return MetricsStack{
+		Stack:         stack,
+		MetricsServer: pushGateway,
+	}
+}
+
+func NewPotStackStack(scope constructs.Construct, id string, props *PotStackProps) awscdk.Stack {
+	var sprops awscdk.StackProps
+	if props != nil {
+		sprops = props.StackProps
+	}
+
+	sprops.CrossRegionReferences = jsii.Bool(true)
+	stack := awscdk.NewStack(scope, &id, &sprops)
+
+	_, filename, _, ok := runtime.Caller(1)
+	if !ok {
+		panic("unable to obtain filepath")
+	}
+
+	vpc := awsec2.NewVpc(stack, jsii.String("Vpc"), &awsec2.VpcProps{
+		IpAddresses: awsec2.IpAddresses_Cidr(jsii.String("172.31.0.0/24")),
+		MaxAzs:      jsii.Number(1),
+		NatGateways: jsii.Number(0),
+		SubnetConfiguration: &[]*awsec2.SubnetConfiguration{
+			{
+				CidrMask:   jsii.Number(26),
+				Name:       jsii.String("Public"),
+				SubnetType: awsec2.SubnetType_PUBLIC,
+			},
+		},
+	})
 
 	appImage := awsecrassets.NewDockerImageAsset(stack, jsii.String("EcrAsset"), &awsecrassets.DockerImageAssetProps{
 		Directory: jsii.String(path.Join(filepath.Dir(filename), "..")),
@@ -210,9 +267,12 @@ WantedBy=multi-user.target" > /etc/systemd/system/prometheus.service`),
 		}),
 
 		Environment: &map[string]*string{
-			"PUSH_GATEWAY_ADDRESS": awscdk.Fn_Sub(jsii.String("${PRIVATE_IP}:9091"), &map[string]*string{
-				"PRIVATE_IP": pushGateway.InstancePrivateIp(),
+			"PUSH_GATEWAY_ADDRESS": awscdk.Fn_Sub(jsii.String("${PUBLIC_DNS}:9093"), &map[string]*string{
+				"PUBLIC_DNS": props.MetricsServer.InstancePublicDnsName(),
 			}),
+			"PUSH_GATEWAY_USERNAME": props.MetricsServerCreds.Username,
+			"PUSH_GATEWAY_PASSWORD": props.MetricsServerCreds.Password,
+			"PUSH_GATEWAY_REGION":   stack.Region(),
 		},
 
 		PortMappings: &[]*awsecs.PortMapping{
@@ -236,8 +296,6 @@ WantedBy=multi-user.target" > /etc/systemd/system/prometheus.service`),
 		Vpc: vpc,
 	})
 
-	pushGatewaySg.AddIngressRule(serviceSg, awsec2.Port_Tcp(jsii.Number(9091)), jsii.String("Allow Prometheus Push Gateway traffic"), jsii.Bool(false))
-
 	serviceSg.AddIngressRule(awsec2.Peer_AnyIpv4(), awsec2.Port_Tcp(jsii.Number(80)), jsii.String("Allow HTTP traffic from anywhere"), jsii.Bool(false))
 	serviceSg.AddIngressRule(awsec2.Peer_Ipv4(jsii.String("172.31.0.0/24")), awsec2.Port_AllTraffic(), jsii.String("Allow internal traffic"), jsii.Bool(false))
 	awsecs.NewFargateService(stack, jsii.String("EcsService"), &awsecs.FargateServiceProps{
@@ -250,7 +308,7 @@ WantedBy=multi-user.target" > /etc/systemd/system/prometheus.service`),
 		},
 		VpcSubnets:        &awsec2.SubnetSelection{SubnetType: awsec2.SubnetType_PUBLIC},
 		TaskDefinition:    taskDefinition,
-		DesiredCount:      jsii.Number(8),
+		DesiredCount:      jsii.Number(props.NodeCount),
 		AssignPublicIp:    jsii.Bool(true),
 		MaxHealthyPercent: jsii.Number(200),
 		MinHealthyPercent: jsii.Number(0),
@@ -279,29 +337,45 @@ func main() {
 
 	app := awscdk.NewApp(nil)
 
-	NewPotStackStack(app, "GoPotStack", &TestStackProps{
-		awscdk.StackProps{
-			Env: env(),
+	// @todo - Move this to secrets manager at some stage
+	metricsServerPassword, ok := app.Node().TryGetContext(jsii.String("MetricsServerPassword")).(string)
+
+	if !ok || metricsServerPassword == "" {
+		fmt.Println("Watning! MetricsServerPassword must be set  in context (--context \"MetricsServerPassword ...\")")
+		metricsServerPassword = "foobar"
+	}
+
+	metricsServerCreds := &MetricsServerCreds{
+		Username: jsii.String("go-pot"),
+		Password: jsii.String(string(metricsServerPassword)),
+	}
+
+	metricsStack := NewMetricsStack(app, "GoPotMetricsStack", &MetricsStackProps{
+		StackProps: awscdk.StackProps{
+			Env: env(metricsRegion),
 		},
+		MetricsServerCreds: metricsServerCreds,
 	})
 
-	NewPotStackStack(app, "GoPotStack-US", &TestStackProps{
-		awscdk.StackProps{
-			Env: &awscdk.Environment{
-				Account: jsii.String("849652302708"),
-				Region:  jsii.String("us-east-1"),
+	for _, region := range potRegions {
+		NewPotStackStack(app, fmt.Sprintf("GoPotStack-%s", region), &PotStackProps{
+			StackProps: awscdk.StackProps{
+				Env: env(region),
 			},
-		},
-	})
+			MetricsServerCreds: metricsServerCreds,
+			MetricsServer:      metricsStack.MetricsServer,
+			NodeCount:          nodesPerCluster,
+		})
+	}
 
 	app.Synth(nil)
 }
 
 // env determines the AWS environment (account+region) in which our stack is to
 // be deployed. For more information see: https://docs.aws.amazon.com/cdk/latest/guide/environments.html
-func env() *awscdk.Environment {
+func env(region string) *awscdk.Environment {
 	return &awscdk.Environment{
 		Account: jsii.String("849652302708"),
-		Region:  jsii.String("us-east-1"),
+		Region:  jsii.String(region),
 	}
 }

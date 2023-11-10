@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -22,6 +23,8 @@ type (
 	Telemetry struct {
 		nodeName                string
 		pushGatewayAddress      string
+		basicAuthUsername       string
+		basicAuthPassword       string
 		wastedTimeMutex         sync.Mutex
 		wastedTimeCounter       prometheus.Counter
 		secretsGeneratedMutex   sync.Mutex
@@ -35,9 +38,17 @@ func NewTelemetry(input *TelemetryInput) (*Telemetry, error) {
 		return nil, errors.New("PUSH_GATEWAY_ADDRESS not set")
 	}
 
+	region := os.Getenv("PUSH_GATEWAY_REGION")
+	nodeName := input.NodeName
+	if region != "" {
+		nodeName = fmt.Sprintf("%s-%s", nodeName, region)
+	}
+
 	return &Telemetry{
-		nodeName:           input.NodeName,
+		nodeName:           nodeName,
 		pushGatewayAddress: os.Getenv("PUSH_GATEWAY_ADDRESS"),
+		basicAuthUsername:  os.Getenv("PUSH_GATEWAY_USERNAME"),
+		basicAuthPassword:  os.Getenv("PUSH_GATEWAY_PASSWORD"),
 		wastedTimeCounter: prometheus.NewCounter(prometheus.CounterOpts{
 			Name: "time_wasted",
 			Help: "Time wasted by clients calling this service",
@@ -63,7 +74,7 @@ func (t *Telemetry) Start() {
 			case <-t.shutdownChan:
 				return
 			case <-ticker:
-				if err := push.New(t.pushGatewayAddress, t.nodeName).Gatherer(registry).Push(); err != nil {
+				if err := t.getAuthedClient().Gatherer(registry).Push(); err != nil {
 					zap.L().Sugar().Errorw("Failed to push metrics", "error", err)
 				}
 			}
@@ -75,12 +86,21 @@ func (t *Telemetry) Stop() {
 	zap.L().Sugar().Warnw("Stopping telemetry")
 	t.shutdownChan <- true
 
-	if err := push.New(t.pushGatewayAddress, t.nodeName).Delete(); err != nil {
+	if err := t.getAuthedClient().Delete(); err != nil {
 		zap.L().Sugar().Errorw("Failed to delete metrics", "error", err)
 		return
 	}
 
 	zap.L().Sugar().Warnw("Stopped telemetry")
+}
+
+func (t *Telemetry) getAuthedClient() *push.Pusher {
+	client := push.New(t.pushGatewayAddress, t.nodeName)
+
+	if t.basicAuthPassword != "" && t.basicAuthUsername != "" {
+		return client.BasicAuth(t.basicAuthUsername, t.basicAuthPassword)
+	}
+	return client
 }
 
 func (t *Telemetry) TrackWastedTime(wastedTime time.Duration) {
