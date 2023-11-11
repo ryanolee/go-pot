@@ -19,7 +19,7 @@ import (
 
 const (
 	metricsRegion   = "eu-west-1"
-	nodesPerCluster = 48
+	nodesPerCluster = 40
 )
 
 var (
@@ -238,142 +238,6 @@ func NewPotStackStack(scope constructs.Construct, id string, props *PotStackProp
 		},
 	})
 
-	// EC2 Prometheus Push Gateway
-	pushGatewaySg := awsec2.NewSecurityGroup(stack, jsii.String("PushGatewaySecurityGroup"), &awsec2.SecurityGroupProps{
-		Vpc: vpc,
-	})
-	pushGatewaySg.AddIngressRule(awsec2.Peer_AnyIpv4(), awsec2.Port_Tcp(jsii.Number(9092)), jsii.String("Ingress from prometheus (Internet)"), jsii.Bool(false))
-	pushGatewaySg.AddIngressRule(awsec2.Peer_AnyIpv4(), awsec2.Port_Tcp(jsii.Number(9093)), jsii.String("Ingress from prometheus (Internet)"), jsii.Bool(false))
-
-	pushGateway := awsec2.NewInstance(stack, jsii.String("PrometheusMetricsNode"), &awsec2.InstanceProps{
-		InstanceType: awsec2.NewInstanceType(jsii.String("t3.micro")),
-		MachineImage: awsec2.NewAmazonLinuxImage(&awsec2.AmazonLinuxImageProps{
-			Generation: awsec2.AmazonLinuxGeneration_AMAZON_LINUX_2,
-		}),
-		Vpc: vpc,
-		VpcSubnets: &awsec2.SubnetSelection{
-			SubnetType: awsec2.SubnetType_PUBLIC,
-		},
-		SecurityGroup: pushGatewaySg,
-	})
-
-	//ssmData := awsssm.StringParameter_FromStringParameterName(stack, jsii.String("SsmGrafanaCloud"), jsii.String("/ryan-pot/grafana-cloud-key"))
-	//ssmData.GrantRead(pushGateway.Role())
-	pushGateway.UserData().AddCommands(
-		// Install SSM Agent
-		jsii.String("sudo yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm"),
-		jsii.String("sudo systemctl enable amazon-ssm-agent"),
-		jsii.String("sudo systemctl start amazon-ssm-agent"),
-
-		// Install utils
-		jsii.String("sudo yum install -y gettext envsubst"),
-
-		// Setup Prometheus Push Gateway
-		jsii.String("sudo useradd -M -r -s /bin/false pushgateway"),
-		jsii.String("wget https://github.com/prometheus/pushgateway/releases/download/v1.2.0/pushgateway-1.2.0.linux-amd64.tar.gz"),
-		jsii.String("tar xvfz pushgateway-1.2.0.linux-amd64.tar.gz"),
-		jsii.String("sudo cp pushgateway-1.2.0.linux-amd64/pushgateway /usr/local/bin/"),
-		jsii.String("sudo chown pushgateway:pushgateway /usr/local/bin/pushgateway"),
-		jsii.String(`echo "[Unit]
-Description=Prometheus Pushgateway
-Wants=network-online.target
-After=network-online.target
-
-[Service]
-User=pushgateway
-Group=pushgateway
-Type=simple
-ExecStart=/usr/local/bin/pushgateway
-[Install]
-WantedBy=multi-user.target" > /etc/systemd/system/pushgateway.service`),
-		jsii.String("sudo systemctl enable pushgateway"),
-		jsii.String("sudo systemctl start pushgateway"),
-
-		// Install prometheus
-		jsii.String("sudo useradd --no-create-home --shell /bin/false prometheus"),
-		jsii.String("sudo mkdir /etc/prometheus /var/lib/prometheus"),
-		jsii.String("sudo chown prometheus:prometheus /etc/prometheus /var/lib/prometheus"),
-		jsii.String("cd ~"),
-		jsii.String("curl -LO https://github.com/prometheus/prometheus/releases/download/v2.45.1/prometheus-2.45.1.linux-amd64.tar.gz"),
-		jsii.String("tar -xvf prometheus-2.45.1.linux-amd64.tar.gz"),
-		jsii.String("sudo cp -p ./prometheus-2.45.1.linux-amd64/prometheus /usr/local/bin"),
-		jsii.String("sudo chown prometheus:prometheus /usr/local/bin/prom*"),
-		jsii.String("sudo cp -r ./prometheus-2.45.1.linux-amd64/consoles /etc/prometheus"),
-		jsii.String("sudo cp -r ./prometheus-2.45.1.linux-amd64/console_libraries /etc/prometheus"),
-		jsii.String("sudo chown -R prometheus:prometheus /etc/prometheus/consoles /etc/prometheus/console_libraries"),
-		jsii.String(`echo "global:
-  scrape_interval: 1m
-  evaluation_interval: 1m
-  scrape_timeout: 2s
-scrape_configs:
-- job_name: push_gateway
-  metrics_path: /metrics
-  scheme: http
-  static_configs:
-  - targets: ['localhost:9091']
-    labels:
-      service: 'prom-pushgateway'
-" > /etc/prometheus/prometheus.yml`),
-		// Pull config from SSM
-		//awscdk.Fn_Sub(jsii.String("aws ssm get-parameter --region ${REGION} --name ${NAME} --with-decryption --query Parameter.Value --output text >> /etc/prometheus/prometheus.yml"), &map[string]*string{
-		//	"REGION": props.Env.Region,
-		//	"NAME":   ssmData.ParameterName(),
-		//}),
-
-		jsii.String(`echo "[Unit]
-Description=PromServer
-Wants=network-online.target
-After=network-online.target
-
-[Service]
-User=prometheus
-Group=prometheus
-Type=simple
-ExecStart=/usr/local/bin/prometheus \
---config.file /etc/prometheus/prometheus.yml \
---storage.tsdb.path /var/lib/prometheus/ \
---web.console.templates=/etc/prometheus/consoles \
---web.console.libraries=/etc/prometheus/console_libraries
-
-[Install]
-WantedBy=multi-user.target" > /etc/systemd/system/prometheus.service`),
-		jsii.String("sudo systemctl daemon-reload"),
-		jsii.String("sudo systemctl enable prometheus"),
-		jsii.String("sudo systemctl start prometheus"),
-
-		// Setup and install nginx
-		jsii.String("sudo amazon-linux-extras install nginx1 -y"),
-		jsii.String("sudo chkconfig nginx on"),
-		jsii.String("sudo service nginx start"),
-		jsii.String(`sudo echo "server {
-	listen *:9092;
-		location / {
-			auth_basic             "Restricted";
-			auth_basic_user_file   .htpasswd;
-
-			proxy_pass              http://localhost:9090;
-		}
-	}
-	server {
-	listen *:9093;
-		location / {
-			auth_basic             "Restricted";
-			auth_basic_user_file   .htpasswd;
-
-			proxy_pass              http://localhost:9091;
-		}
-	}" > /etc/nginx/conf.d/pushgateway.conf`),
-		jsii.String(`sudo yum install httpd-tools -y`),
-		awscdk.Fn_Sub(jsii.String("sudo htpasswd -c -b /etc/nginx/.htpasswd ${USERNAME} ${PASSWORD}"), &map[string]*string{
-			"USERNAME": jsii.String("ryan-pot"),
-			// @todo Pull this from Secrets Manager
-			"PASSWORD": jsii.String("SOME_SECRET"),
-		}),
-		jsii.String("sudo service nginx restart"),
-	)
-
-	pushGateway.Role().AddManagedPolicy(awsiam.ManagedPolicy_FromAwsManagedPolicyName(jsii.String("AmazonSSMManagedInstanceCore")))
-
 	appImage := awsecrassets.NewDockerImageAsset(stack, jsii.String("EcrAsset"), &awsecrassets.DockerImageAssetProps{
 		Directory: jsii.String(path.Join(filepath.Dir(filename), "..")),
 		Exclude:   jsii.Strings("./cdk"),
@@ -431,8 +295,6 @@ WantedBy=multi-user.target" > /etc/systemd/system/prometheus.service`),
 	serviceSg := awsec2.NewSecurityGroup(stack, jsii.String("SecurityGroup"), &awsec2.SecurityGroupProps{
 		Vpc: vpc,
 	})
-
-	pushGatewaySg.AddIngressRule(serviceSg, awsec2.Port_Tcp(jsii.Number(9091)), jsii.String("Allow Prometheus Push Gateway traffic"), jsii.Bool(false))
 
 	serviceSg.AddIngressRule(awsec2.Peer_AnyIpv4(), awsec2.Port_Tcp(jsii.Number(80)), jsii.String("Allow HTTP traffic from anywhere"), jsii.Bool(false))
 	serviceSg.AddIngressRule(awsec2.Peer_Ipv4(jsii.String("172.31.0.0/24")), awsec2.Port_AllTraffic(), jsii.String("Allow internal traffic"), jsii.Bool(false))
