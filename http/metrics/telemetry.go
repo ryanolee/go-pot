@@ -6,8 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
+	dto "github.com/prometheus/client_model/go"
 	"go.uber.org/zap"
 )
 
@@ -89,8 +91,21 @@ func (t *Telemetry) TrackWastedTime(wastedTime time.Duration) {
 	t.wastedTimeCounter.Add(wastedTime.Seconds())
 }
 
+func (t *Telemetry) GetWastedTime() float64 {
+	return getCounterValue(t.wastedTimeCounter)
+}
+
 func (t *Telemetry) TrackGeneratedSecrets(generatedSecrets int) {
 	t.secretsGeneratedMutex.Lock()
 	defer t.secretsGeneratedMutex.Unlock()
 	t.secretsGeneratedCounter.Add(float64(generatedSecrets))
+}
+
+func getCounterValue(counter prometheus.Counter) float64 {
+	m := &dto.Metric{}
+	if err := counter.Write(m); err != nil {
+		log.Warn("Failed to pull metric data", "error", err)
+		return 0
+	}
+	return m.GetCounter().GetValue()
 }

@@ -29,8 +29,9 @@ type (
 func Serve(cfg ServerConfig) error {
 	// Setup server
 	app := fiber.New(fiber.Config{
-		IdleTimeout:       time.Second * 15,
-		ReduceMemoryUsage: true,
+		IdleTimeout:           time.Second * 15,
+		ReduceMemoryUsage:     true,
+		DisableStartupMessage: true,
 	})
 
 	// Setup logging
@@ -130,14 +131,36 @@ func Serve(cfg ServerConfig) error {
 		return staller.StallContextBuffer(c)
 	})
 
-	go func() {
-		shutdownChannel := make(chan os.Signal, 1)
-		signal.Notify(shutdownChannel, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
-		<-shutdownChannel
-		zap.L().Sugar().Warnw("Shutting down server")
+	// Handle shutdown
+	shutdown := func() {
 		client.Shutdown()
 		pool.Stop()
 		telemetry.Stop()
+		app.Shutdown()
+	}
+
+	recast, err := metrics.NewRecast(&metrics.RecastInput{
+		Telemetry: telemetry,
+		OnRecast:  shutdown,
+	})
+
+	if err != nil {
+		zap.L().Sugar().Errorw("Failed to create recast", "error", err)
+	} else {
+		recast.StartChecking()
+	}
+
+	go func() {
+		shutdownChannel := make(chan os.Signal, 1)
+
+		signal.Notify(shutdownChannel, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+
+		<-shutdownChannel
+		zap.L().Sugar().Warnw("Shutting down server due to sigterm")
+		shutdown()
+		if recast != nil {
+			recast.Shutdown()
+		}
 	}()
 
 	return app.Listen(fmt.Sprintf(":%d", cfg.Port))

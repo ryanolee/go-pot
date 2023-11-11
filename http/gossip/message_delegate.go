@@ -35,7 +35,7 @@ func NewMessageDelegate(eventsDelegate *MessageEventDelegate) *MessageDelegate {
 		NumNodes: func() int {
 			return eventsDelegate.Num
 		},
-		RetransmitMult: 2,
+		RetransmitMult: 1,
 	}
 	return &MessageDelegate{
 		MessageChan: make(chan []byte),
