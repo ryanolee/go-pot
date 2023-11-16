@@ -4,13 +4,20 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"math"
 	"net"
 	"sync"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ryanolee/ryan-pot/generator"
+	"github.com/ryanolee/ryan-pot/http/metrics"
 	"go.uber.org/zap"
+)
+
+const (
+	// Rate at which staller will report on wasted time to the given telemetry instance
+	StallerReportInterval = time.Second * 30
 )
 
 type (
@@ -30,6 +37,9 @@ type (
 		runningLock sync.Mutex
 
 		deregisterChan chan *HttpStaller
+
+		telemetryTicker *time.Ticker
+		telemetry       *metrics.Telemetry
 	}
 
 	HttpStallerOptions struct {
@@ -39,6 +49,7 @@ type (
 		Timeout      time.Duration
 		OnTimeout    func(*HttpStaller)
 		OnClose      func(*HttpStaller)
+		Telemetry    *metrics.Telemetry
 	}
 )
 
@@ -69,6 +80,7 @@ func NewHttpStaller(opts *HttpStallerOptions) *HttpStaller {
 		id:           opts.Request.Context().ConnID(),
 		onTimeout:    opts.OnTimeout,
 		onClose:      opts.OnClose,
+		telemetry:    opts.Telemetry,
 	}
 }
 
@@ -83,6 +95,7 @@ func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
 
 	ctx.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
 		s.ticker = time.NewTicker(s.transferRate)
+		s.telemetryTicker = time.NewTicker(StallerReportInterval)
 		logger := zap.L().Sugar()
 
 		closeContext := context.Background()
@@ -149,6 +162,12 @@ func (s *HttpStaller) PushDataToClient(ctx context.Context, w *bufio.Writer, dat
 				s.handleTimeout()
 				return false, err
 			}
+		case <-s.telemetryTicker.C:
+			if s.telemetry == nil {
+				continue
+			}
+
+			s.telemetry.TrackWastedTime(StallerReportInterval)
 		case <-ctx.Done():
 			// Flush the rest of the data to the client in the case we are closing
 			w.Write(data[i:])
@@ -164,6 +183,13 @@ func (s *HttpStaller) PushDataToClient(ctx context.Context, w *bufio.Writer, dat
 }
 
 func (s *HttpStaller) Halt(conn net.Conn) {
+	if s.ticker != nil {
+		s.ticker.Stop()
+	}
+
+	if s.telemetryTicker != nil {
+		s.telemetryTicker.Stop()
+	}
 	s.deregisterChan <- s
 	s.Close()
 	conn.Close()
@@ -172,15 +198,25 @@ func (s *HttpStaller) Halt(conn net.Conn) {
 func (s *HttpStaller) handleTimeout() {
 	s.endTime = time.Now()
 	go s.onTimeout(s)
+	if s.telemetry != nil {
+		s.telemetry.TrackWastedTime(s.GetRemainingTimeToReport())
+	}
 }
 
 func (s *HttpStaller) handleClose() {
 	s.endTime = time.Now()
 	go s.onClose(s)
+	if s.telemetry != nil {
+		s.telemetry.TrackWastedTime(s.GetRemainingTimeToReport())
+	}
 }
 
 func (s *HttpStaller) GetElapsedTime() time.Duration {
 	return s.endTime.Sub(s.startTime)
+}
+
+func (s *HttpStaller) GetRemainingTimeToReport() time.Duration {
+	return time.Duration(math.Mod(float64(s.GetElapsedTime()), float64(StallerReportInterval)))
 }
 
 func (s *HttpStaller) Close() {

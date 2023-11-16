@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	minimumRecastInterval = 5
-	maximumRecastInterval = 30
+	minimumRecastInterval = 30
+	maximumRecastInterval = 120
 
 	// If the node has spent less than 5% of its time wasting other nodes time then it should recast
 	timeWastedRatio = 0.05
@@ -58,13 +58,12 @@ func (r *Recast) StartChecking() {
 				zap.L().Sugar().Infow("Checking if node should recast", "wastedTimeSinceLastCheck", wastedTimeSinceLastCheck, "timeWastedRatio", timeWastedRatio, "recastCheckDuration", recastCheckDuration)
 
 				if wastedTimeSinceLastCheck < recastCheckDuration.Seconds()*timeWastedRatio {
-					zap.L().Sugar().Infow("Node should recast", "wastedTimeSinceLastCheck", wastedTimeSinceLastCheck, "timeWastedRatio", timeWastedRatio, "recastCheckDuration", recastCheckDuration)
+					zap.L().Sugar().Warnw("Node should recast", "wastedTimeSinceLastCheck", wastedTimeSinceLastCheck, "timeWastedRatio", timeWastedRatio, "recastCheckDuration", recastCheckDuration)
 					r.onRecast()
 					return
 				}
 
 				cumulativeWastedTime = r.telemetry.GetWastedTime()
-				return
 			case <-r.shutdownChan:
 				zap.L().Sugar().Warnw("Shutting down recast checker!")
 				return

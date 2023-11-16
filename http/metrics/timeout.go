@@ -25,7 +25,7 @@ const (
 	timeoutIncrement = time.Second * 10
 
 	// The increment we will increase timeouts by for requests with timeouts smaller than 30 seconds
-	timeoutSub30Increment = time.Second * 5
+	timeoutSubThirtyIncrement = time.Second * 5
 
 	// The increment we will increase timeouts by for requests with timeouts smaller than 10 seconds
 	timeoutSubTenIncrement = time.Second * 2
@@ -35,7 +35,7 @@ const (
 	GraceTimeout  = time.Millisecond * 100
 
 	// If we know the IP will hang on forever grant them what they want!
-	longestTimeout = time.Hour * 48
+	longestTimeout = time.Hour * 96
 
 	sampleSize      = 3
 	sampleDeviation = time.Second * 1
@@ -101,7 +101,7 @@ func (t *TimeoutForIp) CalculateNextTimeout() time.Duration {
 	}
 
 	if t.LastPerformedTimeout < time.Second*30 {
-		return t.LastPerformedTimeout + timeoutSub30Increment
+		return t.LastPerformedTimeout + timeoutSubThirtyIncrement
 	}
 
 	if t.LastPerformedTimeout < upperTimeoutBound {
@@ -231,12 +231,22 @@ func (tw *TimeoutWatcher) CommitToColdCache(ipAddress string, timeout time.Durat
 
 func (tw *TimeoutWatcher) CommitToColdCacheWithBroadcast(ipAddress string, timeout time.Duration) {
 	tw.CommitToColdCache(ipAddress, timeout)
-	if tw.actionDispatcher != nil {
-		tw.actionDispatcher.Broadcast(&action.BroadcastAction{
-			Action: "ADD_COLD_IP",
-			Data:   ipAddress + "," + strconv.Itoa(int(timeout)),
-		})
+	tw.BroadcastColdCacheIp(ipAddress, timeout)
+}
+
+func (tw *TimeoutWatcher) HasColdCacheTimeout(ipAddress string) bool {
+	_, ok := tw.coldCachePool.Get(ipAddress)
+	return ok
+}
+
+func (tw *TimeoutWatcher) BroadcastColdCacheIp(ipAddress string, timeout time.Duration) {
+	if tw.actionDispatcher == nil {
+		return
 	}
+	tw.actionDispatcher.Broadcast(&action.BroadcastAction{
+		Action: "ADD_COLD_IP",
+		Data:   ipAddress + "," + strconv.Itoa(int(timeout)),
+	})
 }
 
 func (tw *TimeoutWatcher) GetTimeout(ipAddress string) time.Duration {

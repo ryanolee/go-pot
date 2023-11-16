@@ -37,6 +37,7 @@ func Serve(cfg ServerConfig) error {
 	// Setup logging
 	logger := logging.UseLogger(app)
 	zap.ReplaceGlobals(logger)
+	zap.L().Sugar().Infow("Starting server", "port", cfg.Port, "debug", cfg.Debug)
 
 	// Connection Pool
 	pool := stall.NewHttpStallerPool(stall.HttpStallerPoolOptions{
@@ -104,23 +105,14 @@ func Serve(cfg ServerConfig) error {
 			Request:      c,
 			TransferRate: time.Millisecond * 75,
 			Timeout:      timeout,
+			Telemetry:    telemetry,
 			OnTimeout: func(s *stall.HttpStaller) {
 				logger.Sugar().Infow("Timeout", "ip", ipAddress, "duration", s.GetElapsedTime())
 				watcher.RecordResponse(ipAddress, s.GetElapsedTime(), false)
-
-				if telemetry == nil {
-					return
-				}
-				telemetry.TrackWastedTime(s.GetElapsedTime())
 			},
 			OnClose: func(s *stall.HttpStaller) {
 				logger.Sugar().Infow("Timeout", "ip", ipAddress, "duration", s.GetElapsedTime())
 				watcher.RecordResponse(ipAddress, s.GetElapsedTime(), true)
-
-				if telemetry == nil {
-					return
-				}
-				telemetry.TrackWastedTime(s.GetElapsedTime())
 			},
 		})
 		err := pool.Register(staller)
@@ -133,10 +125,20 @@ func Serve(cfg ServerConfig) error {
 
 	// Handle shutdown
 	shutdown := func() {
+		logger := zap.L().Sugar()
+		logger.Warnw("Shutting down server...")
+		go func() {
+			time.Sleep(time.Second * 30)
+			logger.Warnw("Force shutting down server...")
+			os.Exit(0)
+		}()
+		telemetry.Stop()
 		client.Shutdown()
 		pool.Stop()
-		telemetry.Stop()
 		app.Shutdown()
+		logger.Warnw("Server shutdown complete! (Shutting down soon)")
+		time.Sleep(time.Second * 2)
+		os.Exit(0)
 	}
 
 	recast, err := metrics.NewRecast(&metrics.RecastInput{

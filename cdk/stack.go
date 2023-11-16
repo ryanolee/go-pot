@@ -23,10 +23,31 @@ const (
 )
 
 var (
-	potRegions = []string{"eu-west-1", "us-east-1", "ap-northeast-1"}
+	potData = []PotStackData{
+		{
+			Region: "eu-west-1",
+			Nodes:  10,
+		},
+		{
+			Region: "us-west-1",
+			Nodes:  10,
+		},
+		{
+			Region: "us-east-1",
+			Nodes:  10,
+		},
+		{
+			Region: "ap-northeast-1",
+			Nodes:  4,
+		},
+	}
 )
 
 type (
+	PotStackData struct {
+		Region string
+		Nodes  int
+	}
 	MetricsServerCreds struct {
 		Username *string
 		Password *string
@@ -357,14 +378,14 @@ func main() {
 		MetricsServerCreds: metricsServerCreds,
 	})
 
-	for _, region := range potRegions {
-		NewPotStackStack(app, fmt.Sprintf("GoPotStack-%s", region), &PotStackProps{
+	for _, data := range potData {
+		NewPotStackStack(app, fmt.Sprintf("GoPotStack-%s", data.Region), &PotStackProps{
 			StackProps: awscdk.StackProps{
-				Env: env(region),
+				Env: env(data.Region),
 			},
 			MetricsServerCreds: metricsServerCreds,
 			MetricsServer:      metricsStack.MetricsServer,
-			NodeCount:          nodesPerCluster,
+			NodeCount:          data.Nodes,
 		})
 	}
 

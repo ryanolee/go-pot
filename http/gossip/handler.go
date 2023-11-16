@@ -25,7 +25,6 @@ func NewBroadcastActionHandler(timeoutWatcher *metrics.TimeoutWatcher) *Broadcas
 func (h *BroadcastActionHandler) Handle(action *action.BroadcastAction) {
 	switch action.Action {
 	case "ADD_COLD_IP":
-		zap.L().Sugar().Infow("Received ADD_COLD_IP action", "data", action.Data)
 		data := strings.Split(action.Data, ",")
 		ip := data[0]
 		duration, err := strconv.Atoi(data[1])
@@ -34,7 +33,13 @@ func (h *BroadcastActionHandler) Handle(action *action.BroadcastAction) {
 			return
 		}
 
-		h.timeoutWatcher.CommitToColdCache(ip, time.Duration(duration))
+		if !h.timeoutWatcher.HasColdCacheTimeout(ip) {
+			zap.L().Sugar().Infow("ADD_COLD_IP is new to this node, Rebroadcasting.", "ip", ip, "duration", duration)
+			h.timeoutWatcher.CommitToColdCacheWithBroadcast(ip, time.Duration(duration))
+		} else {
+			h.timeoutWatcher.CommitToColdCache(ip, time.Duration(duration))
+		}
+
 	default:
 		zap.L().Sugar().Warnw("Received unknown action", "action", action.Action, "data", action.Data)
 	}
