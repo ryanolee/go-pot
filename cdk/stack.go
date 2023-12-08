@@ -275,7 +275,7 @@ func NewPotStackStack(scope constructs.Construct, id string, props *PotStackProp
 	})
 
 	logGroup := awslogs.NewLogGroup(stack, jsii.String("LogGroup"), &awslogs.LogGroupProps{
-		LogGroupName: jsii.String("/ryan-pot/nodes"),
+		LogGroupName: jsii.String("/go-pot/nodes"),
 		Retention:    awslogs.RetentionDays_ONE_WEEK,
 	})
 
@@ -284,7 +284,7 @@ func NewPotStackStack(scope constructs.Construct, id string, props *PotStackProp
 		Essential: jsii.Bool(true),
 		Logging: awsecs.NewAwsLogDriver(&awsecs.AwsLogDriverProps{
 			LogGroup:     logGroup,
-			StreamPrefix: jsii.String("/ryan-pot"),
+			StreamPrefix: jsii.String("/go-pot"),
 		}),
 
 		Environment: &map[string]*string{
