@@ -1,10 +1,13 @@
 package stall
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
+	"github.com/ryanolee/ryan-pot/config"
+	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
@@ -20,16 +23,29 @@ type (
 
 	HttpStallerPoolOptions struct {
 		MaximumConnections     int
-		MaximumFileDescriptors int
 	}
 )
 
-func NewHttpStallerPool(opts HttpStallerPoolOptions) *HttpStallerPool {
-	return &HttpStallerPool{
-		deregisterChan:     make(chan *HttpStaller, opts.MaximumConnections),
+func NewHttpStallerPool(lifecycle fx.Lifecycle, config *config.Config) *HttpStallerPool {
+	pool := &HttpStallerPool{
+		deregisterChan:     make(chan *HttpStaller, config.Staller.MaximumConnections),
+		stopChan:           make(chan bool),
 		stallers:           NewStallerCollection(),
-		maximumConnections: opts.MaximumConnections,
+		maximumConnections: config.Staller.MaximumConnections,
 	}
+
+	lifecycle.Append(fx.Hook{
+		OnStart: func(context.Context) error {
+			pool.Start()
+			return nil
+		},
+		OnStop: func(context.Context) error {
+			pool.Stop()
+			return nil
+		},
+	})
+
+	return pool
 }
 
 func (s *HttpStallerPool) Register(staller *HttpStaller) error {
@@ -82,12 +98,15 @@ func (s *HttpStallerPool) Stop() {
 	zap.L().Sugar().Warnw("Stopping staller pool")
 	for _, ipMap := range s.stallers.stallers {
 		for _, staller := range ipMap {
+			zap.L().Sugar().Warnw("Closing staller", "ipAddress", staller.ipAddress, "id", staller.id, "duration", staller.GetElapsedTime())
 			staller.Close()
 		}
 	}
 
-	time.Sleep(time.Second * 2)
-	s.stopChan <- true
+	// Sometimes the deregister channel hangs
+	// @todo: Fix this
+	go(func() {s.stopChan <- true})()
+	
 	zap.L().Sugar().Warnw("Stopped staller pool")
 }
 

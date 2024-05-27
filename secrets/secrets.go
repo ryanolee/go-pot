@@ -6,6 +6,7 @@ import (
 	"regexp/syntax"
 	"strings"
 
+	"github.com/ryanolee/ryan-pot/http/metrics"
 	"github.com/ryanolee/ryan-pot/internal/regen"
 	"github.com/ryanolee/ryan-pot/rand"
 	"gopkg.in/yaml.v3"
@@ -43,13 +44,16 @@ type (
 	}
 )
 
-func NewSecretGeneratorCollection(input *SecretGeneratorCollectionInput) *SecretGeneratorCollection {
-	if input.OnGenerate == nil {
-		input.OnGenerate = func() {}
-	}
+func NewSecretGeneratorCollection(telemetry *metrics.Telemetry) *SecretGeneratorCollection {
 	return &SecretGeneratorCollection{
 		Generators: GetGenerators(),
-		onGenerate: input.OnGenerate,
+		onGenerate: func(){
+			if telemetry == nil {
+				return
+			}
+
+			telemetry.TrackGeneratedSecrets(1)
+		},
 	}
 }
 

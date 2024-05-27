@@ -1,6 +1,10 @@
 package encoder
 
-import "regexp"
+import (
+	"regexp"
+
+	"go.uber.org/zap"
+)
 
 type MatchingEncoder struct {
 	encoder Encoder
@@ -37,6 +41,7 @@ var encoders = []MatchingEncoder{
 }
 
 func GetEncoderForPath(path string) Encoder {
+	zap.L().Sugar().Debugw("Getting encoder for path", "path", path)
 	for _, encoder := range encoders {
 		if encoder.regexp.MatchString(path) {
 			return encoder.encoder

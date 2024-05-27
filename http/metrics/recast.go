@@ -1,10 +1,13 @@
 package metrics
 
 import (
+	"context"
 	"errors"
 	"time"
 
+	"github.com/ryanolee/ryan-pot/config"
 	"github.com/ryanolee/ryan-pot/rand"
+	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
@@ -19,31 +22,38 @@ const (
 // This struct monitors the amount of time wasted by the node and determines if it should try to shutdown the node and
 // "recast" to get a new IP address
 type (
-	RecastInput struct {
-		Telemetry *Telemetry
-		OnRecast  func()
-	}
 	Recast struct {
 		telemetry    *Telemetry
 		shutdownChan chan bool
-		onRecast     func()
+		shutdowner   fx.Shutdowner
 	}
 )
 
-func NewRecast(recastInput *RecastInput) (*Recast, error) {
-	if recastInput.Telemetry == nil {
-		return nil, errors.New("telemetry is nil")
+func NewRecast(lf fx.Lifecycle, shutdowner fx.Shutdowner, config *config.Config, telemetry *Telemetry ) (*Recast, error) {
+	if !config.Recast.Enabled {
+		return nil, errors.New("Recast is not enabled")
 	}
 
-	if recastInput.OnRecast == nil {
-		return nil, errors.New("onRecast is nil")
+	if telemetry == nil {
+		return nil, errors.New("Telemetry is nil")
 	}
-
-	return &Recast{
+	
+	recast := &Recast{
 		shutdownChan: make(chan bool),
-		telemetry:    recastInput.Telemetry,
-		onRecast:     recastInput.OnRecast,
-	}, nil
+		telemetry:    telemetry,
+		shutdowner:   shutdowner,
+	}
+	
+
+	// Terminate the recast checker when the application is shutting down
+	lf.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			recast.Shutdown()
+			return nil
+		},
+	})
+
+	return recast, nil
 }
 
 func (r *Recast) StartChecking() {
@@ -59,7 +69,7 @@ func (r *Recast) StartChecking() {
 
 				if wastedTimeSinceLastCheck < recastCheckDuration.Seconds()*timeWastedRatio {
 					zap.L().Sugar().Warnw("Node should recast", "wastedTimeSinceLastCheck", wastedTimeSinceLastCheck, "timeWastedRatio", timeWastedRatio, "recastCheckDuration", recastCheckDuration)
-					r.onRecast()
+					r.shutdowner.Shutdown()
 					return
 				}
 

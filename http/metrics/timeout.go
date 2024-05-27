@@ -7,38 +7,9 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
+	"github.com/ryanolee/ryan-pot/config"
 	"github.com/ryanolee/ryan-pot/http/gossip/action"
 	"go.uber.org/zap"
-)
-
-const (
-	// If we have a timeout that is really long we can immidiately commit it to the cold cache
-	instantCommitThreshold = time.Second * 180
-
-	// The upper bound for timeouts before we hang forever
-	upperTimeoutBound = time.Second * 60
-
-	// The smallest timeout we will ever give
-	lowerTimeoutBound = time.Second * 1
-
-	// The increment we will increase timeouts by for requests with timeouts larger than 30 seconds
-	timeoutIncrement = time.Second * 10
-
-	// The increment we will increase timeouts by for requests with timeouts smaller than 30 seconds
-	timeoutSubThirtyIncrement = time.Second * 5
-
-	// The increment we will increase timeouts by for requests with timeouts smaller than 10 seconds
-	timeoutSubTenIncrement = time.Second * 2
-
-	// Grace requests is the number of requests we will allow before beginning to try and timeout the IP
-	GraceRequests = 3
-	GraceTimeout  = time.Millisecond * 100
-
-	// If we know the IP will hang on forever grant them what they want!
-	longestTimeout = time.Hour * 96
-
-	sampleSize      = 3
-	sampleDeviation = time.Second * 1
 )
 
 type (
@@ -58,7 +29,46 @@ type (
 		// Cache pool for IP addresses we have already worked out the IP timeouts for
 		coldCachePool *cache.Cache
 
-		actionDispatcher action.BroadcastActionDispatcher
+		actionDispatcher action.IBroadcastActionDispatcher
+
+		opts *TimeoutWatcherOptions
+	}
+
+	TimeoutWatcherOptions struct {
+		// The maximum amount of time a given IP can be hanging before we consider the IP
+		// to be vulnerable to hanging forever on a request. Any ips that get past this threshold
+		// will always be given the longest timeout
+		instantCommitThreshold time.Duration
+
+		// The upper bound for increasing timeouts. Once the timeout increases to reach this bound we will hang forever.
+		upperTimeoutBound time.Duration
+
+		// The smallest timeout we will ever give
+		lowerTimeoutBound time.Duration
+
+		// The increment we will increase timeouts by for requests with timeouts larger than 30 seconds
+		timeoutOverThirtyIncrement time.Duration
+
+		// The increment we will increase timeouts by for requests with timeouts smaller than 30 seconds
+		timeoutSubThirtyIncrement time.Duration
+
+		// The increment we will increase timeouts by for requests with timeouts smaller than 10 seconds
+		timeoutSubTenIncrement time.Duration
+
+		// The number of requests that are allowed before things begin slowing down
+		graceRequests int
+
+		// The timeout we will give to requests that are allowed to pass the grace period
+	    graceTimeout time.Duration
+
+		// The amount of time to wait when hanging an IP "forever"
+		longestTimeout time.Duration
+
+		// The number of samples to take to detect a timeout
+		sampleSize 	int
+
+		// How close the standards need to be on average to move the IP address into the "Endless stall" category
+		sampleDeviation time.Duration
 	}
 
 	// Timeout for an IP address we have been able to work out who's timeout is
@@ -67,20 +77,38 @@ type (
 		Ip      string
 	}
 
+	// Struct representing the traffic for a given IP address
 	TimeoutForIp struct {
+		// Options for the timeout watcher associated with this IP Timeout
+		opts              	*TimeoutWatcherOptions
+
+		// Mutex for sync operations relating to the given IP
 		mutex                sync.RWMutex
+
+		// The number of requests that have been made by an given IP to this node
 		Requests             int
+
+		// The duration of the last N timeouts that finished successfully
 		ValidTimeouts        []time.Duration
+
+		// The duration of the last N timeouts that finished with a client timeout
 		InvalidTimeouts      []time.Duration
+
+		// The duration of the last valid timeout
 		LastValidTimeout     time.Duration
+
+		// The duration of the last invalid timeout
 		LastInvalidTimeout   time.Duration
+
+		// The duration of the last timeout that was attempted
 		LastPerformedTimeout time.Duration
 	}
 )
 
-func NewTimeoutForIp() *TimeoutForIp {
+func NewTimeoutForIp(opts *TimeoutWatcherOptions) *TimeoutForIp {
 	return &TimeoutForIp{
 		mutex:                sync.RWMutex{},
+		opts:                 opts,
 		Requests:             0,
 		ValidTimeouts:        make([]time.Duration, 0),
 		InvalidTimeouts:      make([]time.Duration, 0),
@@ -91,24 +119,23 @@ func NewTimeoutForIp() *TimeoutForIp {
 }
 
 func (t *TimeoutForIp) CalculateNextTimeout() time.Duration {
-
-	if t.Requests < GraceRequests {
-		return GraceTimeout
+	if t.Requests < t.opts.graceRequests {
+		return t.opts.graceTimeout
 	}
 
 	if t.LastPerformedTimeout < time.Second*10 {
-		return t.LastPerformedTimeout + timeoutSubTenIncrement
+		return t.LastPerformedTimeout + t.opts.timeoutSubTenIncrement
 	}
 
 	if t.LastPerformedTimeout < time.Second*30 {
-		return t.LastPerformedTimeout + timeoutSubThirtyIncrement
+		return t.LastPerformedTimeout + t.opts.timeoutSubThirtyIncrement
 	}
 
-	if t.LastPerformedTimeout < upperTimeoutBound {
-		return t.LastPerformedTimeout + timeoutIncrement
+	if t.LastPerformedTimeout < t.opts.upperTimeoutBound {
+		return t.LastPerformedTimeout + t.opts.timeoutOverThirtyIncrement
 	}
 
-	return longestTimeout
+	return t.opts.longestTimeout
 }
 
 func (t *TimeoutForIp) GetNextTimeout() time.Duration {
@@ -126,17 +153,17 @@ func (t *TimeoutForIp) GetStandardDeviation() time.Duration {
 		return -1
 	}
 
-	startingPos := len(t.InvalidTimeouts) - sampleSize
+	startingPos := len(t.InvalidTimeouts) - t.opts.sampleSize
 	squaredSum := float64(0)
 	for i := startingPos; i < len(t.InvalidTimeouts); i++ {
 		squaredSum += math.Pow(math.Abs(avg-float64(t.InvalidTimeouts[i])), 2)
 	}
 
-	return time.Duration(math.Sqrt(squaredSum / sampleSize))
+	return time.Duration(math.Sqrt(squaredSum / float64(t.opts.sampleSize)))
 }
 
 func (t *TimeoutForIp) GetAverageTimeoutInSample() time.Duration {
-	if len(t.InvalidTimeouts) < sampleSize {
+	if len(t.InvalidTimeouts) < t.opts.sampleSize {
 		return -1
 	}
 
@@ -144,7 +171,7 @@ func (t *TimeoutForIp) GetAverageTimeoutInSample() time.Duration {
 	for i := 0; i < len(t.InvalidTimeouts); i++ {
 		sum += float64(t.InvalidTimeouts[i])
 	}
-	return time.Duration(sum / sampleSize)
+	return time.Duration(sum / float64(t.opts.sampleSize))
 }
 
 func (t *TimeoutForIp) RecordInvalidTimeout(timeout time.Duration) {
@@ -153,7 +180,7 @@ func (t *TimeoutForIp) RecordInvalidTimeout(timeout time.Duration) {
 	t.InvalidTimeouts = append(t.InvalidTimeouts, timeout)
 	t.LastInvalidTimeout = timeout
 
-	if len(t.InvalidTimeouts) > sampleSize {
+	if len(t.InvalidTimeouts) > t.opts.sampleSize {
 		t.InvalidTimeouts = t.InvalidTimeouts[1:]
 	}
 }
@@ -164,16 +191,42 @@ func (t *TimeoutForIp) RecordValidTimeout(timeout time.Duration) {
 	t.ValidTimeouts = append(t.ValidTimeouts, timeout)
 	t.LastValidTimeout = timeout
 
-	if len(t.ValidTimeouts) > sampleSize {
+	if len(t.ValidTimeouts) > t.opts.sampleSize {
 		t.ValidTimeouts = t.ValidTimeouts[1:]
 	}
 }
 
-func NewTimeoutWatcher() *TimeoutWatcher {
-	return &TimeoutWatcher{
-		hotCachePool:  cache.New(time.Minute*30, time.Minute),
-		coldCachePool: cache.New(time.Hour*24, time.Hour),
+func NewTimeoutWatcher(config *config.Config) *TimeoutWatcher {
+	if !config.TimeoutWatcher.Enabled {
+		return nil
 	}
+
+	twConfig := &config.TimeoutWatcher
+
+	return &TimeoutWatcher{
+		actionDispatcher: nil,
+		hotCachePool:  cache.New(time.Duration(twConfig.CacheHotPoolTTL) * time.Second, time.Minute),
+		coldCachePool: cache.New(time.Duration(twConfig.CacheColdPoolTTL) * time.Second, time.Hour),
+		
+		// Map options from config to TimeoutWatcherOptions
+		opts: &TimeoutWatcherOptions{
+			instantCommitThreshold:     time.Duration(twConfig.InstantCommitThreshold) * time.Millisecond,
+			upperTimeoutBound:          time.Duration(twConfig.UpperTimeoutBound) * time.Millisecond,
+			lowerTimeoutBound:          time.Duration(twConfig.LowerTimeoutBound) * time.Millisecond,
+			timeoutOverThirtyIncrement: time.Duration(twConfig.TimeoutOverThirtyIncrement) * time.Millisecond,
+			timeoutSubThirtyIncrement:  time.Duration(twConfig.TimeoutSubThirtyIncrement) * time.Millisecond,
+			timeoutSubTenIncrement:     time.Duration(twConfig.TimeoutSubTenIncrement) * time.Millisecond,
+			graceRequests:              twConfig.GraceRequests,
+			graceTimeout:               time.Duration(twConfig.GraceTimeout) * time.Millisecond,
+			longestTimeout:             time.Duration(twConfig.LongestTimeout) * time.Millisecond,
+			sampleSize:                 twConfig.DetectionSampleSize,
+			sampleDeviation:            time.Duration(twConfig.DetectionSampleDeviation) * time.Millisecond,
+		},
+	}
+}
+
+func (tw *TimeoutWatcher) SetActionDispatcher(actionDispatcher action.IBroadcastActionDispatcher) {
+	tw.actionDispatcher = actionDispatcher
 }
 
 func (tw *TimeoutWatcher) RecordResponse(ipAddress string, timeout time.Duration, successful bool) {
@@ -181,12 +234,12 @@ func (tw *TimeoutWatcher) RecordResponse(ipAddress string, timeout time.Duration
 	result, ok := tw.hotCachePool.Get(ipAddress)
 
 	if !ok {
-		result = NewTimeoutForIp()
+		result = NewTimeoutForIp(tw.opts)
 	}
 
 	if data, ok = result.(*TimeoutForIp); !ok {
 		zap.L().Sugar().Warn("Failed to cast timeout data for IP address. Resetting", "ip", ipAddress)
-		data = NewTimeoutForIp()
+		data = NewTimeoutForIp(tw.opts)
 	}
 
 	if successful {
@@ -195,13 +248,13 @@ func (tw *TimeoutWatcher) RecordResponse(ipAddress string, timeout time.Duration
 		data.RecordInvalidTimeout(timeout)
 	}
 
-	if !successful && timeout > instantCommitThreshold {
+	if !successful && timeout > tw.opts.instantCommitThreshold {
 		zap.L().Sugar().Infow("Timeout recorded higher than instant commit threshold", "ip", ipAddress, "timeout", timeout)
-		tw.CommitToColdCacheWithBroadcast(ipAddress, longestTimeout)
+		tw.CommitToColdCacheWithBroadcast(ipAddress, tw.opts.longestTimeout)
 		return
 	}
 
-	if len(data.InvalidTimeouts) < sampleSize {
+	if len(data.InvalidTimeouts) < tw.opts.sampleSize {
 		return
 	}
 
@@ -210,14 +263,14 @@ func (tw *TimeoutWatcher) RecordResponse(ipAddress string, timeout time.Duration
 		return
 	}
 
-	if sd > sampleDeviation {
+	if sd > tw.opts.sampleDeviation {
 		return
 	}
 	zap.L().Sugar().Infow("Standard deviation is low. We have probably found the timeout! Committing to cold cache", "ip", ipAddress, "sd", sd)
 	avg := data.GetAverageTimeoutInSample()
 	timeoutToCommit := avg - (sd * 2)
-	if timeoutToCommit < lowerTimeoutBound {
-		timeoutToCommit = lowerTimeoutBound
+	if timeoutToCommit < tw.opts.lowerTimeoutBound {
+		timeoutToCommit = tw.opts.lowerTimeoutBound
 	}
 
 	zap.L().Sugar().Infow("Committed to cold cache", "ip", ipAddress, "timeout", timeoutToCommit)
@@ -243,7 +296,8 @@ func (tw *TimeoutWatcher) BroadcastColdCacheIp(ipAddress string, timeout time.Du
 	if tw.actionDispatcher == nil {
 		return
 	}
-	tw.actionDispatcher.Broadcast(&action.BroadcastAction{
+
+	tw.actionDispatcher.Dispatch(&action.BroadcastAction{
 		Action: "ADD_COLD_IP",
 		Data:   ipAddress + "," + strconv.Itoa(int(timeout)),
 	})
@@ -264,12 +318,12 @@ func (tw *TimeoutWatcher) GetTimeout(ipAddress string) time.Duration {
 	result, ok := tw.hotCachePool.Get(ipAddress)
 
 	if !ok {
-		result = NewTimeoutForIp()
+		result = NewTimeoutForIp(tw.opts)
 	}
 
 	if data, ok = result.(*TimeoutForIp); !ok {
 		zap.L().Sugar().Warn("Failed to cast timeout data for IP address. Resetting", "ip", ipAddress)
-		data = NewTimeoutForIp()
+		data = NewTimeoutForIp(tw.opts)
 	}
 
 	tw.hotCachePool.Set(ipAddress, data, cache.DefaultExpiration)
@@ -279,6 +333,3 @@ func (tw *TimeoutWatcher) GetTimeout(ipAddress string) time.Duration {
 	return timeout
 }
 
-func (tw *TimeoutWatcher) BindActionDispatcher(dispatcher action.BroadcastActionDispatcher) {
-	tw.actionDispatcher = dispatcher
-}

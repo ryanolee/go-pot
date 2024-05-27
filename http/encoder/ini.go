@@ -30,7 +30,7 @@ func (*IniEncoder) ContentType() string {
 }
 
 func ContentType() string {
-	return "application/hcl"
+	return "text/plain"
 }
 
 func (e *IniEncoder) Marshal(v interface{}) ([]byte, error) {

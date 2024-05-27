@@ -32,6 +32,7 @@ type (
 		endTime      time.Time
 		onTimeout    func(*HttpStaller)
 		onClose      func(*HttpStaller)
+		contentType  string
 
 		running     bool
 		runningLock sync.Mutex
@@ -43,9 +44,10 @@ type (
 	}
 
 	HttpStallerOptions struct {
+		ContentType  string
+		Request      *fiber.Ctx
 		Generator    generator.Generator
 		TransferRate time.Duration
-		Request      *fiber.Ctx
 		Timeout      time.Duration
 		OnTimeout    func(*HttpStaller)
 		OnClose      func(*HttpStaller)
@@ -73,6 +75,7 @@ func NewHttpStaller(opts *HttpStallerOptions) *HttpStaller {
 	return &HttpStaller{
 		runningLock:  sync.Mutex{},
 		running:      true,
+		contentType:  opts.ContentType,
 		generator:    opts.Generator,
 		transferRate: opts.TransferRate,
 		timeout:      opts.Timeout,
@@ -103,7 +106,7 @@ func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
 
 		continueWriting, err := s.PushDataToClient(closeContext, w, s.generator.Start())
 		if !continueWriting {
-			logger.Error("staller closed during header write", "connId", s.id, "err", err)
+			logger.Error("Empty Object sent!", "connId", s.id, "err", err)
 			s.Halt(conn)
 			cancelContext()
 			return
@@ -192,7 +195,7 @@ func (s *HttpStaller) Halt(conn net.Conn) {
 	}
 	s.deregisterChan <- s
 	s.Close()
-	conn.Close()
+	//conn.Close()
 }
 
 func (s *HttpStaller) handleTimeout() {
@@ -217,6 +220,10 @@ func (s *HttpStaller) GetElapsedTime() time.Duration {
 
 func (s *HttpStaller) GetRemainingTimeToReport() time.Duration {
 	return time.Duration(math.Mod(float64(s.GetElapsedTime()), float64(StallerReportInterval)))
+}
+
+func (s *HttpStaller) GetContentType() string {
+	return s.contentType
 }
 
 func (s *HttpStaller) Close() {

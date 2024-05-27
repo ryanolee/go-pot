@@ -7,8 +7,8 @@ import (
 )
 
 type (
-	BroadcastActionDispatcher interface {
-		Broadcast(*BroadcastAction)
+	IBroadcastActionDispatcher interface {
+		Dispatch(*BroadcastAction)
 	}
 
 	BroadcastAction struct {

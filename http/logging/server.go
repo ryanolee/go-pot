@@ -7,10 +7,25 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func UseLogger(app *fiber.App) *zap.Logger {
-	logger := zap.Must(zap.NewProduction())
+type (
+	IServerLogger interface {
+		Use(app *fiber.App) *zap.Logger
+	}
+
+	ServerLogger struct {
+		logger *zap.Logger
+	}
+)
+
+func NewServerLogger(logger *zap.Logger) *ServerLogger {
+	return &ServerLogger{
+		logger: logger,
+	}
+}
+
+func (s *ServerLogger) Use(app *fiber.App) *zap.Logger {
 	app.Use(fiberzap.New(fiberzap.Config{
-		Logger: logger,
+		Logger: s.logger,
 		FieldsFunc: func(c *fiber.Ctx) []zapcore.Field {
 			userAgent := c.Request().Header.UserAgent()
 			length := len(userAgent)
@@ -48,5 +63,5 @@ func UseLogger(app *fiber.App) *zap.Logger {
 		},
 	}))
 
-	return logger
+	return s.logger
 }

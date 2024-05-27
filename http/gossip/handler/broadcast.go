@@ -1,4 +1,4 @@
-package gossip
+package handler
 
 import (
 	"strconv"
@@ -11,6 +11,10 @@ import (
 )
 
 type (
+	IBroadcastActionHandler interface {
+		Handle(*action.BroadcastAction)
+	}
+
 	BroadcastActionHandler struct {
 		timeoutWatcher *metrics.TimeoutWatcher
 	}

@@ -7,7 +7,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "ryan-pot",
+	Use:   "go-pot",
 	Short: "A fake secret generating tarpit",
 }
 
