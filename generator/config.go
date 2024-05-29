@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/ryanolee/ryan-pot/http/encoder"
+	"github.com/ryanolee/ryan-pot/generator/encoder"
 	"github.com/ryanolee/ryan-pot/secrets"
 )
 

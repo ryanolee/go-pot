@@ -17,17 +17,15 @@ import (
 	"github.com/ryanolee/ryan-pot/http/stall"
 	"github.com/ryanolee/ryan-pot/secrets"
 	"go.uber.org/fx"
-	//"go.uber.org/fx/fxevent"
-	//"go.uber.org/zap"
+	"go.uber.org/fx/fxevent"
+	"go.uber.org/zap"
 )
 
 // Creates the dependency injection container for the application
-func CreateContainer() *fx.App {
+func CreateContainer(conf *config.Config) *fx.App {
 	return fx.New(
+		fx.Supply(conf),
 		fx.Provide(
-			// Config
-			config.NewConfig,
-			
 			// Logging
 			logging.NewLogger,
 
@@ -85,10 +83,11 @@ func CreateContainer() *fx.App {
 		}),
 
 		fx.Invoke(func(s *http.Server) {
+			zap.L().Info("Starting server", zap.Int("port", s.ListenPort),  zap.String("host", s.ListenHost))
 			go s.Start()
 		}),
-		//fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
-		//	return &fxevent.ZapLogger{Logger: log}
-		//}),
+		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
+			return &fxevent.ZapLogger{Logger: log}
+		}),
 	)
 }

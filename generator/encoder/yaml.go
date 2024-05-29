@@ -27,3 +27,7 @@ func (*YamlEncoder) Delimiter() string {
 func (*YamlEncoder) ContentType() string {
 	return "application/x-yaml"
 }
+
+func (*YamlEncoder) GetSupportedGenerator() string {
+	return "config"
+}

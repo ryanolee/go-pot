@@ -28,3 +28,7 @@ func (*JsonEncoder) Delimiter() string {
 func (*JsonEncoder) ContentType() string {
 	return "application/json"
 }
+
+func (*JsonEncoder) GetSupportedGenerator() string {
+	return "config"
+}

@@ -1,18 +1,20 @@
-version: "2.8"
 services:
   ryan-pot-node-1:
     container_name: ryan-pot-node-1
     build:
-      context: .
+      context: ./../../
       dockerfile: Dockerfile
       target: dev
     volumes:
-      - .:/app:ro
+      - ./../../:/app:ro
     ports:
       - "8080:80"
+    command: "go-pot"
     environment:
-      - DOCKER_IP_ADDRESS=10.5.0.4
-      - DOCKER_KNOWN_PEERS=10.5.0.5
+      - GOPOT__CLUSTER__ENABLED=true
+      - GOPOT__CLUSTER__ADVERTISE_IP=10.5.0.4
+      - GOPOT__CLUSTER__KNOWN_PEER_IPS=10.5.0.5
+      - GOPOT__CLUSTER__LOGGING_ENABLED=true
       - PUSH_GATEWAY_ADDRESS=http://10.5.0.9:9091
     networks:
       ryan-pot-network:
@@ -21,16 +23,18 @@ services:
   ryan-pot-node-2:
     container_name: ryan-pot-node-2
     build:
-      context: .
+      context: ./../../
       dockerfile: Dockerfile
       target: dev
     volumes:
-      - .:/app:ro
+      - ./../../:/app:ro
     ports:
       - "8081:80"
     environment:
-      - DOCKER_IP_ADDRESS=10.5.0.5
-      - DOCKER_KNOWN_PEERS=10.5.0.6
+      - GOPOT__CLUSTER__ENABLED=true
+      - GOPOT__CLUSTER__ADVERTISE_IP=10.5.0.5
+      - GOPOT__CLUSTER__KNOWN_PEER_IPS=10.5.0.6
+      - GOPOT__CLUSTER__LOGGING_ENABLED=true
       - PUSH_GATEWAY_ADDRESS=http://10.5.0.9:9091
     networks:
       ryan-pot-network:
@@ -39,16 +43,18 @@ services:
   ryan-pot-node-3:
     container_name: ryan-pot-node-3
     build:
-      context: .
+      context: ./../../
       dockerfile: Dockerfile
       target: dev
     volumes:
-      - .:/app:ro
+      - ./../../:/app:ro
     ports:
       - "8082:80"
     environment:
-      - DOCKER_IP_ADDRESS=10.5.0.6
-      - DOCKER_KNOWN_PEERS=10.5.0.4
+      - GOPOT__CLUSTER__ENABLED=true
+      - GOPOT__CLUSTER__ADVERTISE_IP=10.5.0.6
+      - GOPOT__CLUSTER__KNOWN_PEER_IPS=10.5.0.4
+      - GOPOT__CLUSTER__LOGGING_ENABLED=true
       - PUSH_GATEWAY_ADDRESS=http://10.5.0.9:9091
     networks:
       ryan-pot-network:

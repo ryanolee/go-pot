@@ -84,3 +84,7 @@ func (*XmlEncoder) Delimiter() string {
 func (*XmlEncoder) ContentType() string {
 	return "application/xml"
 }
+
+func (*XmlEncoder) GetSupportedGenerator() string {
+	return "config"
+}

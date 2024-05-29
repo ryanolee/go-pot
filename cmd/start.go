@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ryanolee/ryan-pot/config"
 	"github.com/ryanolee/ryan-pot/di"
 	"github.com/spf13/cobra"
 )
@@ -17,12 +18,19 @@ var startCmd = &cobra.Command{
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		di := di.CreateContainer()
+
+		conf, err := config.NewConfig(cmd)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		
+		di := di.CreateContainer(conf)
 		di.Run()
 	},
 }
 
 func init() {
-	startCmd.Flags().Int("port", 8080, "Port to listen on")
+	config.BindConfigFlags(startCmd)
 	rootCmd.AddCommand(startCmd)
 }

@@ -33,6 +33,10 @@ func ContentType() string {
 	return "text/plain"
 }
 
+func (*IniEncoder) GetSupportedGenerator() string {
+	return "config"
+}
+
 func (e *IniEncoder) Marshal(v interface{}) ([]byte, error) {
 	file := ini.Empty()
 	if value, ok := v.(map[string]interface{}); ok {

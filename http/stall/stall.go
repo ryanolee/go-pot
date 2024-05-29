@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"math"
-	"net"
 	"sync"
 	"time"
 
@@ -21,6 +20,7 @@ const (
 )
 
 type (
+	// Represents a single open connection to the honeypot actively being stalled
 	HttpStaller struct {
 		id           uint64
 		ipAddress    string
@@ -93,7 +93,6 @@ func (s *HttpStaller) BindPool(deregisterChan chan *HttpStaller) {
 
 // StallBuffer stalls the buffer by writing a chunk of data every N milliseconds
 func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
-	conn := ctx.Context().Conn()
 	s.startTime = time.Now()
 
 	ctx.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
@@ -104,10 +103,11 @@ func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
 		closeContext := context.Background()
 		closeContext, cancelContext := context.WithTimeout(closeContext, s.timeout)
 
-		continueWriting, err := s.PushDataToClient(closeContext, w, s.generator.Start())
-		if !continueWriting {
-			logger.Error("Empty Object sent!", "connId", s.id, "err", err)
-			s.Halt(conn)
+		err := s.writeDataToClient(w, s.generator.Start())
+		if err != nil{
+			logger.Error("Failed first write!", "connId", s.id, "err", err)
+			s.handleTimeout()
+			s.Halt()
 			cancelContext()
 			return
 		}
@@ -117,7 +117,7 @@ func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
 				// Flush the rest of the data to the client in the case we are closing
 				w.Write(s.generator.End())
 				w.Flush()
-				s.Halt(conn)
+				s.Halt()
 				s.handleClose()
 				cancelContext()
 				return
@@ -129,7 +129,7 @@ func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
 
 			if !continueWriting {
 				time.Sleep(time.Millisecond * 500)
-				s.Halt(conn)
+				s.Halt()
 				cancelContext()
 				return
 			}
@@ -156,15 +156,12 @@ func (s *HttpStaller) PushDataToClient(ctx context.Context, w *bufio.Writer, dat
 				dataToWrite = []byte{data[i]}
 			}
 
-			if _, err := w.Write(dataToWrite); err != nil {
+			if err := s.writeDataToClient(w, dataToWrite); err != nil {
 				s.handleTimeout()
 				return false, err
 			}
 
-			if err := w.Flush(); err != nil {
-				s.handleTimeout()
-				return false, err
-			}
+			
 		case <-s.telemetryTicker.C:
 			if s.telemetry == nil {
 				continue
@@ -185,7 +182,7 @@ func (s *HttpStaller) PushDataToClient(ctx context.Context, w *bufio.Writer, dat
 	return true, nil
 }
 
-func (s *HttpStaller) Halt(conn net.Conn) {
+func (s *HttpStaller) Halt() {
 	if s.ticker != nil {
 		s.ticker.Stop()
 	}
@@ -196,6 +193,18 @@ func (s *HttpStaller) Halt(conn net.Conn) {
 	s.deregisterChan <- s
 	s.Close()
 	//conn.Close()
+}
+
+func (s *HttpStaller) writeDataToClient(w *bufio.Writer, dataToWrite []byte) error {
+	if _, err := w.Write(dataToWrite); err != nil {
+		return err
+	}
+
+	if err := w.Flush(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *HttpStaller) handleTimeout() {

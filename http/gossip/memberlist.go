@@ -102,12 +102,13 @@ func NewMemberList(lf fx.Lifecycle, logger *zap.Logger, config *config.Config, b
 	memberList := &Memberlist{
 		client:       client,
 		delegate:     msgDelegate,
+		handler:      broadcastHandler,
 		shutdownChan: make(chan bool),
 		connectionAttempts: config.Cluster.ConnectionAttempts,
 		connectionTimeout:  time.Duration(config.Cluster.ConnectionTimeout) * time.Second,
 		nodeInfo: nodeInfo,
 	}
-
+	
 	lf.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			go memberList.Join()

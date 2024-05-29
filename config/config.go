@@ -1,10 +1,14 @@
 package config
 
 import (
+	"fmt"
+	"strings"
+
 	validate "github.com/go-playground/validator/v10"
+	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/structs"
 	"github.com/knadh/koanf/v2"
-	"go.uber.org/zap/zapcore"
+	"github.com/spf13/cobra"
 )
 
 
@@ -12,7 +16,7 @@ import (
 type (
     // This struct covers the entire application configuration
 	Config struct {
-		HttpServer serverConfig `koanf:"http_server"`
+		Server serverConfig `koanf:"server"`
         Logging loggingConfig `koanf:"logging"`
         Cluster clusterConfig `koanf:"cluster"`
         TimeoutWatcher timeoutWatcherConfig `koanf:"timeout_watcher"`
@@ -43,17 +47,17 @@ type (
         //               Ip addresses are supplied by the AWS v4 Metadata endpoint so no other IP addresses are needed
         // lan         - This mode is for when the application is running on a local network (See https://github.com/hashicorp/memberlist/blob/8ddac568337bd6b77df1aed75317a52f8b930e83/config.go#L296 for more info)
         // wan         - This mode is for when the application is running on a public network (See https://github.com/hashicorp/memberlist/blob/8ddac568337bd6b77df1aed75317a52f8b930e83/config.go#L340C6-L340C22 for more info)
-        Mode string `koanf:"mode" validate:"required_if=Enabled true,omitempty,oneof='fargate_ecs lan wan'"`
+        Mode string `koanf:"mode" validate:"required_if=Enabled true,omitempty,oneof=fargate_ecs lan wan"`
 
         // The bind address for the cluster to listen on
         BindPort int `koanf:"bind_port" validate:"required_if=Enabled true,omitempty,min=1,max=65535"`
 
         // Known Peers
-        KnownPeerIps []string `koanf:"known_peers" validate:"required_if=Mode lan Mode wan,omitempty,dive,ipv4"`
+        KnownPeerIps []string `koanf:"known_peer_ips" validate:"required_if=Enabled true,required_if=Mode lan Mode wan,omitempty"`
 
         // Host Ip Address
         // Advertisement IP Address for this node to use against other nodes in the cluster
-        AdvertiseIp string `koanf:"advertise_ip" validate:"required_if=Mode lan Mode wan,omitempty,ipv4"`
+        AdvertiseIp string `koanf:"advertise_ip" validate:"required_if=Enabled true,required_if=Mode lan Mode wan,omitempty,ipv4"`
 
         // Enable member list logging output
         EnableLogging bool `koanf:"enable_logging"`
@@ -135,11 +139,11 @@ type (
         Metrics telemetryMetricsConfig `koanf:"metrics"`
 
         // Prometheus configuration
-        Prometheus telemetryPrometheus `koanf:"prometheus"`
+        Prometheus telemetryPrometheusConfig `koanf:"prometheus"`
     }
 
     // Configuration related to the telemetry prometheus
-    telemetryPrometheus struct {
+    telemetryPrometheusConfig struct {
         // If the prometheus server is enabled
         Enabled bool `koanf:"enabled"`
 
@@ -205,94 +209,47 @@ type (
     }
 )
 
-var defaultConfig = Config{
-	HttpServer: serverConfig{
-		Port: 8080,
-		Host: "127.0.0.1",
-		Debug: false,
-	},
-    Logging: loggingConfig {
-        Level: zapcore.InfoLevel.String(),
-    },
-    Cluster: clusterConfig {
-        Enabled: false,
-        ConnectionTimeout: 5,
-        ConnectionAttempts: 5,
-        EnableLogging: false,
-        BindPort: 7946,
-    },
-    TimeoutWatcher: timeoutWatcherConfig {
-        Enabled: true,
-        
-        // Threaholds
-        InstantCommitThreshold: 180 * 1000, // 3 minutes
-        UpperTimeoutBound: 60 * 1000, // 1 minute
-        LowerTimeoutBound:  1000, // 1 second
+func NewConfig(cmd *cobra.Command) (*Config, error) {
 
-        // Grace Periods
-        GraceRequests: 3,
-        GraceTimeout:  100, // 100ms
-
-        // Timeouts
-        LongestTimeout: 7 * 24 * 60 * 60 * 1000, // 7 days
-
-        // Increments
-        TimeoutOverThirtyIncrement: 10 * 1000, // 10 seconds
-        TimeoutSubThirtyIncrement: 5 * 1000, // 5 seconds
-        TimeoutSubTenIncrement: 2 * 1000, // 1 second
-
-        // Detection
-        DetectionSampleSize: 3,
-        DetectionSampleDeviation: 1000, // 1 second
-
-        // Cache TTLs
-        CacheHotPoolTTL: 60 * 60, // 1 hour
-        CacheColdPoolTTL: 60 * 60 * 48, // 2 days
-    },
-    Telemetry: telemetryConfig {
-        Enabled: true,
-        NodeName: "go-pot",
-        PushGateway: telemetryPushGatewayConfig{
-            Enabled: false,
-            PushIntervalSecs: 60,
-            Endpoint: "",
-            Username: "",
-            Password: "",
-        },
-        Prometheus: telemetryPrometheus{
-            Enabled: true,
-            Port: 9001,
-            Path: "/metrics",
-        },
-        Metrics: telemetryMetricsConfig{
-            TrackSecretsGenerated: true,
-            TrackTimeWasted: true,
-        },
-    },
-    Recast: recastConfig{
-        Enabled: false,
-        MinimumRecastIntervalMin: 30,
-        MaximumRecastIntervalMin: 120,
-        TimeWastedRatio: 0.05,
-    },
-    Staller: httpStallerConfig{
-        MaximumConnections: 200,
-        BytesPerSecond: 8,
-    },
-}
+    k := koanf.New(".")
 
 
-func NewConfig () (*Config, error) {
-	k := koanf.New(".")
-
+    // Load the default configuration
 	if err := k.Load(structs.Provider(defaultConfig, "koanf"), nil); err != nil {
 		return nil, err
 	}
+
+    // Override the default configuration with values given by the flags
+    k = writeFlagValues(k, cmd)
+
+    // Write environment variables to the configuration
+    err := k.Load(env.ProviderWithValue("GOPOT__", ".", func(s string, v string) (string, interface{}) {
+        key := strings.Replace(strings.ToLower(strings.TrimPrefix(s, "GOPOT__")), "__", ".", -1)
+        if v == "true" || v == "false" {
+            fmt.Println(key, v == "true")
+            return key, v == "true"
+        }
+
+        return key, v
+	}), nil)
+
+    if err != nil {
+        return nil, err
+    }
+
+    
+    // Handle special cases
+    if k.Get("cluster.known_peer_ips") != "" {
+        k.Set("cluster.known_peer_ips", strings.Split(k.String("cluster.known_peer_ips"), ","))
+    } else {
+        k.Set("cluster.known_peer_ips", []string{})
+    }
 
 	var cfg *Config
 	if err := k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "koanf"}); err != nil {
 		return nil, err
 	}
+
     validator := validate.New()
     if err := validator.Struct(cfg); err != nil {
         return nil, err

@@ -40,6 +40,10 @@ func (*TomlEncoder) Delimiter() string {
 	return ""
 }
 
+func (*TomlEncoder) GetSupportedGenerator() string {
+	return "config"
+}
+
 func (*TomlEncoder) ContentType() string {
 	return "application/toml"
 }

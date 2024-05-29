@@ -46,6 +46,10 @@ func (*HclEncoder) ContentType() string {
 	return "application/hcl"
 }
 
+func (*HclEncoder) GetSupportedGenerator() string {
+	return "config"
+}
+
 func mapUnknownHclBlocks(file *hclwrite.Body, value map[string]interface{}){
 	for blockName, sectionValue := range value {
 		block := file.AppendNewBlock(blockName, make([]string, 0))

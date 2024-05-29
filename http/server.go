@@ -36,11 +36,11 @@ func NewServer(
 		App: fiber.New(fiber.Config{
 			IdleTimeout:           time.Second * 15,
 			ReduceMemoryUsage:     true,
-			DisableStartupMessage: true,
+			//DisableStartupMessage: true,
 		}),
 
-		ListenPort: cfg.HttpServer.Port,
-		ListenHost: cfg.HttpServer.Host,
+		ListenPort: cfg.Server.Port,
+		ListenHost: cfg.Server.Host,
 
 		stallerFactory: stallerFactory,
 	}
