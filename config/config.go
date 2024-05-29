@@ -32,9 +32,6 @@ type (
 
         // Server host to listen on
 		Host string `koanf:"host" validate:"required"`
-
-        // Debug mode
-		Debug bool `koanf:"debug"`
 	}
 
     // Cluster specific configuration
@@ -66,7 +63,7 @@ type (
         ConnectionAttempts int `koanf:"connection_attempts" validate:"min=1"`
 
         // The timeout for each connection attempt in seconds
-        ConnectionTimeout int `koanf:"connection_timeout" validate:"min=1"`
+        ConnectionTimeout int `koanf:"connection_timeout_secs" validate:"min=1"`
 
     }
 
@@ -219,6 +216,10 @@ func NewConfig(cmd *cobra.Command) (*Config, error) {
 		return nil, err
 	}
 
+    if err:= loadConfigFile(k, cmd); err != nil {
+        return nil, err
+    }
+
     // Override the default configuration with values given by the flags
     k = writeFlagValues(k, cmd)
 
@@ -236,6 +237,7 @@ func NewConfig(cmd *cobra.Command) (*Config, error) {
     if err != nil {
         return nil, err
     }
+    
 
     
     // Handle special cases

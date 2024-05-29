@@ -1,9 +1,0 @@
-apiVersion: 1
-
-datasources:
-- name: Prometheus
-  type: prometheus
-  url: http://10.5.0.7:9090 
-  isDefault: true
-  access: proxy
-  editable: true

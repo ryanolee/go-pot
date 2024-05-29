@@ -1,70 +1,177 @@
 package config
 
 import (
+	"os"
+
 	"github.com/knadh/koanf/v2"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
+
+type flagConfig struct {
+	flagName string
+	configKey string
+	description string
+	configType string
+	defaultValue interface{}
+}
+
+var flagsToConfigMap = map[string]flagConfig{
+	"port": {
+		flagName: "port",
+		configKey: "server.port",
+		description: "The port for the honeypot to listen on.",
+		configType: "int",
+		defaultValue: defaultConfig.Server.Port,
+	},
+	"host": {
+		flagName: "host",
+		configKey: "server.host",
+		description: "The host for the honeypot to listen on.",
+		configType: "string",
+		defaultValue: defaultConfig.Server.Host,
+	},
+	"cluster-mode-enabled": {
+		flagName: "cluster-mode-enabled",
+		configKey: "cluster.enabled",
+		description: "Enable cluster mode for connectivity with other honeypots.",
+		configType: "bool",
+		defaultValue: defaultConfig.Cluster.Enabled,
+	},
+	"cluster-advertise-ip": {
+		flagName: "cluster-advertise-ip",
+		configKey: "cluster.advertise_ip",
+		description: "The IP address to advertise to other honeypots in the cluster.",
+		configType: "string",
+		defaultValue: defaultConfig.Cluster.AdvertiseIp,
+	},
+	"cluster-known-peers": {
+		flagName: "cluster-known-peers",
+		configKey: "cluster.known_peers",
+		description: "A comma separated list of known peers to connect to.",
+		configType: "string",
+		defaultValue: "",
+	},
+	"cluster-port": {
+		flagName: "cluster-port",
+		configKey: "cluster.bind_port",
+		description: "The port for the honeypot to listen on for cluster communication. [This port should not be exposed to the internet.]",
+		configType: "int",
+		defaultValue: defaultConfig.Cluster.BindPort,
+	},
+	"cluster-logging-enabled": {
+		flagName: "cluster-logging-enabled",
+		configKey: "cluster.enable_logging",
+		description: "Enable cluster communication logging. (Useful for debugging cluster connectivity issues)",
+		configType: "bool",
+		defaultValue: defaultConfig.Cluster.EnableLogging,
+	},
+	"telemetry-name": {
+		flagName: "telemetry-name",
+		configKey: "telemetry.node_name",
+		description: "The telemetry node name.",
+		configType: "string",
+		defaultValue: defaultConfig.Telemetry.NodeName,
+	},
+	"push-gateway-enabled": {
+		flagName: "push-gateway-enabled",
+		configKey: "telemetry.push_gateway.enabled",
+		description: "Enable prometheus push gateway integration.",
+		configType: "bool",
+		defaultValue: defaultConfig.Telemetry.PushGateway.Enabled,
+	},
+	"push-gateway-url": {
+		flagName: "push-gateway-url",
+		configKey: "telemetry.push_gateway.endpoint",
+		description: "The URL for the prometheus push gateway.",
+		configType: "string",
+		defaultValue: defaultConfig.Telemetry.PushGateway.Endpoint,
+	},
+	"prometheus-enabled": {
+		flagName: "prometheus-enabled",
+		configKey: "telemetry.prometheus.enabled",
+		description: "Enable prometheus metrics collection endpoint.",
+		configType: "bool",
+		defaultValue: defaultConfig.Telemetry.Prometheus.Enabled,
+	},
+	"prometheus-path": {
+		flagName: "prometheus-path",
+		configKey: "telemetry.prometheus.path",
+		description: "The path for the prometheus metrics collection endpoint.",
+		configType: "string",
+		defaultValue: defaultConfig.Telemetry.Prometheus.Path,
+	},
+	"prometheus-port": {
+		flagName: "prometheus-port",
+		configKey: "telemetry.prometheus.port",
+		description: "The port for the prometheus metrics collection endpoint.",
+		configType: "int",
+		defaultValue: defaultConfig.Telemetry.Prometheus.Port,
+	},
+	"recast-enabled": {
+		flagName: "recast-enabled",
+		configKey: "recast.enabled",
+		description: "Enable recast metrics collection.",
+		configType: "bool",
+		defaultValue: defaultConfig.Recast.Enabled,
+	},
+	"maximum-connections": {
+		flagName: "maximum-connections",
+		configKey: "staller.maximum_connections",
+		description: "The maximum number of open connections to the honeypot to allow.",
+		configType: "int",
+		defaultValue: defaultConfig.Staller.MaximumConnections,
+	},
+	"bytes-per-second": {
+		flagName: "bytes-per-second",
+		configKey: "staller.bytes_per_second",
+		description: "The number of bytes to transfer per second.",
+		configType: "int",
+		defaultValue: defaultConfig.Staller.BytesPerSecond,
+	},
+}
 
 // Binds configuration flags to the provided command
 func BindConfigFlags(cmd *cobra.Command) *cobra.Command {
-	// Server flags
-	cmd.Flags().Int("port", defaultConfig.Server.Port, "The port for the honeypot to listen on.")
-	cmd.Flags().String("host", defaultConfig.Server.Host, "The host for the honeypot to listen on.")
-
-	// Cluster mode flags
-	cmd.Flags().Bool("cluster-mode-enabled", defaultConfig.Cluster.Enabled, "Enable cluster mode for connectivity with other honeypots.")
-	cmd.Flags().String("cluster-advertise-ip", defaultConfig.Cluster.AdvertiseIp, "The IP address to advertise to other honeypots in the cluster.")
-	cmd.Flags().String("cluster-known-peers", "", "A comma separated list of known peers to connect to.")
-	cmd.Flags().Int("cluster-port", defaultConfig.Cluster.BindPort, "The port for the honeypot to listen on for cluster communication. [This port should not be exposed to the internet.]")
-	cmd.Flags().Bool("cluster-logging-enabled", defaultConfig.Cluster.EnableLogging, "Enable cluster communication logging. (Useful for debugging cluster connectivity issues)")
-
-	// Telemetry flags
-	cmd.Flags().String("telemetry-name", defaultConfig.Telemetry.NodeName, "The telemetry node name.")
-
-	// Push gateway flags
-	cmd.Flags().Bool("push-gateway-enabled", defaultConfig.Telemetry.PushGateway.Enabled, "Enable prometheus push gateway integration.")
-	cmd.Flags().String("push-gateway-url", defaultConfig.Telemetry.PushGateway.Endpoint, "The URL for the prometheus push gateway.")
+	for _, flag := range flagsToConfigMap {
+		switch flag.configType {
+		case "int":
+			cmd.Flags().Int(flag.flagName, flag.defaultValue.(int), flag.description)
+		case "string":
+			cmd.Flags().String(flag.flagName, flag.defaultValue.(string), flag.description)
+		case "bool":
+			cmd.Flags().Bool(flag.flagName, flag.defaultValue.(bool), flag.description)
+		}
+	}
 	
-	// Prometheus flags
-	cmd.Flags().Bool("prometheus-enabled", defaultConfig.Telemetry.Prometheus.Enabled, "Enable prometheus metrics collection endpoint.")
-	cmd.Flags().String("prometheus-path", defaultConfig.Telemetry.Prometheus.Path, "The path for the prometheus metrics collection endpoint.")
-	cmd.Flags().Int("prometheus-port", defaultConfig.Telemetry.Prometheus.Port, "The port for the prometheus metrics collection endpoint.")
-	
-	// Recast flags
-	cmd.Flags().Bool("recast-enabled", defaultConfig.Recast.Enabled, "Enable recast metrics collection.")
-	
-	// Other flags
-	cmd.Flags().Int("maximum-connections", defaultConfig.Staller.MaximumConnections, "The maximum number of open connections to the honeypot to allow.")
-	cmd.Flags().Int("bytes-per-second", defaultConfig.Staller.BytesPerSecond, "The number of bytes to transfer per second.")
-
 	return cmd
 }
 
 // Reads a flag or panics if the flag is not set
 func readFlagOrPanic[F any](flag F, err error) F {
 	if err != nil {
-		panic(err)
+		zap.L().Sugar().Error(err)
+		os.Exit(1)
 	}
+
 	return flag
 }
 
 func writeFlagValues(k *koanf.Koanf, cmd *cobra.Command) *koanf.Koanf {
-	k.Set("server.port", readFlagOrPanic(cmd.Flags().GetInt("port")))
-	k.Set("server.host", readFlagOrPanic(cmd.Flags().GetString("host")))
-	k.Set("cluster.enabled", readFlagOrPanic(cmd.Flags().GetBool("cluster-mode-enabled")))
-	k.Set("cluster.bind_port", readFlagOrPanic(cmd.Flags().GetInt("cluster-port")))
-	k.Set("cluster.advertise_ip", readFlagOrPanic(cmd.Flags().GetString("cluster-advertise-ip")))
-	k.Set("cluster.known_peers", readFlagOrPanic(cmd.Flags().GetString("cluster-known-peers")))
-	k.Set("cluster.enable_logging", readFlagOrPanic(cmd.Flags().GetBool("cluster-logging-enabled")))
-	k.Set("telemetry.node_name", readFlagOrPanic(cmd.Flags().GetString("telemetry-name")))
-	k.Set("telemetry.push_gateway.enabled", readFlagOrPanic(cmd.Flags().GetBool("push-gateway-enabled")))
-	k.Set("telemetry.push_gateway.endpoint", readFlagOrPanic(cmd.Flags().GetString("push-gateway-url")))
-	k.Set("telemetry.prometheus.enabled", readFlagOrPanic(cmd.Flags().GetBool("prometheus-enabled")))
-	k.Set("telemetry.prometheus.path", readFlagOrPanic(cmd.Flags().GetString("prometheus-path")))
-	k.Set("telemetry.prometheus.port", readFlagOrPanic(cmd.Flags().GetInt("prometheus-port")))
-	k.Set("recast.enabled", readFlagOrPanic(cmd.Flags().GetBool("recast-enabled")))
-	k.Set("staller.maximum_connections", readFlagOrPanic(cmd.Flags().GetInt("maximum-connections")))
-	k.Set("staller.bytes_per_second", readFlagOrPanic(cmd.Flags().GetInt("bytes-per-second")))
+	for _, flag := range flagsToConfigMap {
+		if !cmd.Flags().Changed(flag.flagName) {
+			continue
+		}
+
+		switch flag.configType {
+		case "int":
+			k.Set(flag.configKey, readFlagOrPanic(cmd.Flags().GetInt(flag.flagName)))
+		case "string":
+			k.Set(flag.configKey, readFlagOrPanic(cmd.Flags().GetString(flag.flagName)))
+		case "bool":
+			k.Set(flag.configKey, readFlagOrPanic(cmd.Flags().GetBool(flag.flagName)))
+		}
+	}
 
 	return k
 }

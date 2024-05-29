@@ -32,5 +32,6 @@ var startCmd = &cobra.Command{
 
 func init() {
 	config.BindConfigFlags(startCmd)
+	config.BindConfigFileFlags(startCmd)
 	rootCmd.AddCommand(startCmd)
 }

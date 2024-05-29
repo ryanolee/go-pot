@@ -1,0 +1,54 @@
+services:
+  go_pot_with_metric_endpoint:
+    container_name: go_pot_with_metric_endpoint
+    build:
+      context: ./../../
+      dockerfile: Dockerfile
+      target: dev
+    volumes:
+      - ./../../:/app:ro
+    ports:
+      - "8080:8080"
+    command: "go-pot"
+    environment:
+      - GOPOT__TELEMETRY__PROMETHEUS__ENABLED=true
+      - GOPOT__TELEMETRY__PROMETHEUS__PORT=9001
+      - GOPOT__TELEMETRY__PROMETHEUS__PATH="/metrics"
+      
+
+  go_pot_with_pushgateway:
+    container_name: go_pot_with_pushgateway
+    build:
+      context: ./../../
+      dockerfile: Dockerfile
+      target: dev
+    volumes:
+      - ./../../:/app:ro
+    ports:
+      - "8081:8080"
+    environment:
+      - GOPOT__TELEMETRY__PUSH_GATEWAY__ENABLED=true
+      - GOPOT__TELEMETRY__PUSH_GATEWAY__ENDPOINT=prom_pushgateway:9091
+      - GOPOT__TELEMETRY__PUSH_GATEWAY__PUSH_INTERVAL_SECS=10
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    volumes:
+      - ./docker/prometheus:/etc/prometheus
+  
+  prom_pushgateway:
+    image: prom/pushgateway
+    container_name: prom_pushgateway
+    ports: 
+      - 9091:9091
+
+
+
+
+
+
+    

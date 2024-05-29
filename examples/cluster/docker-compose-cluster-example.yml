@@ -1,6 +1,6 @@
 services:
-  ryan-pot-node-1:
-    container_name: ryan-pot-node-1
+  go-pot-node-1:
+    container_name: go-pot-node-1
     build:
       context: ./../../
       dockerfile: Dockerfile
@@ -15,13 +15,12 @@ services:
       - GOPOT__CLUSTER__ADVERTISE_IP=10.5.0.4
       - GOPOT__CLUSTER__KNOWN_PEER_IPS=10.5.0.5
       - GOPOT__CLUSTER__LOGGING_ENABLED=true
-      - PUSH_GATEWAY_ADDRESS=http://10.5.0.9:9091
     networks:
-      ryan-pot-network:
+      go-pot-network:
         ipv4_address: 10.5.0.4
 
-  ryan-pot-node-2:
-    container_name: ryan-pot-node-2
+  go-pot-node-2:
+    container_name: go-pot-node-2
     build:
       context: ./../../
       dockerfile: Dockerfile
@@ -35,13 +34,12 @@ services:
       - GOPOT__CLUSTER__ADVERTISE_IP=10.5.0.5
       - GOPOT__CLUSTER__KNOWN_PEER_IPS=10.5.0.6
       - GOPOT__CLUSTER__LOGGING_ENABLED=true
-      - PUSH_GATEWAY_ADDRESS=http://10.5.0.9:9091
     networks:
-      ryan-pot-network:
+      go-pot-network:
         ipv4_address: 10.5.0.5
 
-  ryan-pot-node-3:
-    container_name: ryan-pot-node-3
+  go-pot-node-3:
+    container_name: go-pot-node-3
     build:
       context: ./../../
       dockerfile: Dockerfile
@@ -55,50 +53,12 @@ services:
       - GOPOT__CLUSTER__ADVERTISE_IP=10.5.0.6
       - GOPOT__CLUSTER__KNOWN_PEER_IPS=10.5.0.4
       - GOPOT__CLUSTER__LOGGING_ENABLED=true
-      - PUSH_GATEWAY_ADDRESS=http://10.5.0.9:9091
     networks:
-      ryan-pot-network:
+      go-pot-network:
         ipv4_address: 10.5.0.6
 
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    ports:
-      - 9090:9090
-    volumes:
-      - ./docker/prometheus:/etc/prometheus
-    networks:
-      ryan-pot-network:
-        ipv4_address: 10.5.0.7
-
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
-    ports:
-      - 3000:3000
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=grafana
-    volumes:
-      - ./docker/grafana:/etc/grafana/provisioning/datasources
-    networks:
-      ryan-pot-network:
-        ipv4_address: 10.5.0.8
-  
-  prom_pushgateway:
-    image: prom/pushgateway
-    container_name: prom_pushgateway
-    ports: 
-      - 9091:9091
-  
-    networks:
-      ryan-pot-network:
-        ipv4_address: 10.5.0.9
-
 networks:
-  ryan-pot-network:
+  go-pot-network:
     driver: bridge
     ipam:
       config:

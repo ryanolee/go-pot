@@ -107,7 +107,7 @@ func (t *Telemetry) StartPushGateway() {
 
 	registry := t.getPrometheusRegistry()
 	go func() {
-		ticker := time.Tick(time.Duration(t.pushGatewayIntervalSecs))
+		ticker := time.Tick(time.Second * time.Duration(t.pushGatewayIntervalSecs))
 		for {
 			select {
 			case <-t.shutdownChan:

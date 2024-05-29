@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+  scrape_timeout: 2s
+  evaluation_interval: 15s
+scrape_configs:
+# Config for push gateway
+- job_name: push_gateway
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets: ['prom_pushgateway:9091']
+    labels:
+      service: 'prom-pushgateway'
+
+# Config for go_pot metrics collection
+- job_name: go_pot
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets: ['go_pot_with_metric_endpoint:9001']
+    labels:
+      service: 'go-pot-metrics'
+

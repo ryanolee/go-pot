@@ -19,7 +19,6 @@ import (
 
 const (
 	metricsRegion   = "eu-west-1"
-	nodesPerCluster = 40
 )
 
 var (
@@ -29,16 +28,8 @@ var (
 			Nodes:  10,
 		},
 		{
-			Region: "us-west-1",
-			Nodes:  10,
-		},
-		{
 			Region: "us-east-1",
-			Nodes:  10,
-		},
-		{
-			Region: "ap-northeast-1",
-			Nodes:  4,
+			Nodes:  3,
 		},
 	}
 )
@@ -110,8 +101,6 @@ func NewMetricsStack(scope constructs.Construct, id string, props *MetricsStackP
 		SecurityGroup: pushGatewaySg,
 	})
 
-	//ssmData := awsssm.StringParameter_FromStringParameterName(stack, jsii.String("SsmGrafanaCloud"), jsii.String("/ryan-pot/grafana-cloud-key"))
-	//ssmData.GrantRead(pushGateway.Role())
 	pushGateway.UserData().AddCommands(
 		// Install SSM Agent
 		jsii.String("sudo yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm"),
@@ -167,11 +156,6 @@ scrape_configs:
     labels:
       service: 'prom-pushgateway'
 " > /etc/prometheus/prometheus.yml`),
-		// Pull config from SSM
-		//awscdk.Fn_Sub(jsii.String("aws ssm get-parameter --region ${REGION} --name ${NAME} --with-decryption --query Parameter.Value --output text >> /etc/prometheus/prometheus.yml"), &map[string]*string{
-		//	"REGION": props.Env.Region,
-		//	"NAME":   ssmData.ParameterName(),
-		//}),
 
 		jsii.String(`echo "[Unit]
 Description=PromServer
@@ -362,7 +346,7 @@ func main() {
 	metricsServerPassword, ok := app.Node().TryGetContext(jsii.String("MetricsServerPassword")).(string)
 
 	if !ok || metricsServerPassword == "" {
-		fmt.Println("Watning! MetricsServerPassword must be set  in context (--context \"MetricsServerPassword ...\")")
+		fmt.Println("WARNING! MetricsServerPassword must be set  in context (--context \"MetricsServerPassword ...\")")
 		metricsServerPassword = "foobar"
 	}
 
@@ -396,7 +380,7 @@ func main() {
 // be deployed. For more information see: https://docs.aws.amazon.com/cdk/latest/guide/environments.html
 func env(region string) *awscdk.Environment {
 	return &awscdk.Environment{
-		Account: jsii.String("849652302708"),
+		Account: jsii.String("123456789012"),
 		Region:  jsii.String(region),
 	}
 }

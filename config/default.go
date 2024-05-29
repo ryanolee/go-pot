@@ -7,7 +7,6 @@ var defaultConfig = Config{
 	Server: serverConfig{
 		Port: 8080,
 		Host: "127.0.0.1",
-		Debug: false,
 	},
     Logging: loggingConfig {
         Level: zapcore.InfoLevel.String(),

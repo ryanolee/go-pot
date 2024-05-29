@@ -7,3 +7,5 @@ To start the example, run the following commands **in the project root** :
 ```bash
 docker compose -f examples/cluster/docker-compose-cluster-example.yml up
 ```
+
+This will start three instances of Go Pot binding to ports 8080, 8081, and 8082. Each instance will share information about "known" timeouts from the other instances.
