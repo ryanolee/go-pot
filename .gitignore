@@ -1,2 +1,3 @@
 setenv.sh
 node_modules
+dist

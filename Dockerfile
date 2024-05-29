@@ -22,5 +22,5 @@ FROM scratch as prod
 COPY --from=prod-build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=prod-build /app/main /app/main
 
-EXPOSE 80 7947
-ENTRYPOINT ["/app/go-pot", "start", "--port", "80", "--host", "0.0.0.0"]
+EXPOSE 8080 7947
+ENTRYPOINT ["/app/go-pot", "start"]
