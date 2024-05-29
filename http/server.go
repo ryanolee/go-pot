@@ -36,7 +36,7 @@ func NewServer(
 		App: fiber.New(fiber.Config{
 			IdleTimeout:           time.Second * 15,
 			ReduceMemoryUsage:     true,
-			//DisableStartupMessage: true,
+			DisableStartupMessage: true,
 		}),
 
 		ListenPort: cfg.Server.Port,

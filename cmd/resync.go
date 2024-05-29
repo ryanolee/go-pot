@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var databaseCmd = &cobra.Command{
+var resyncCmd = &cobra.Command{
 	Use:   "resync",
 	Short: "Resync secrets from gitleaks",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -36,5 +36,6 @@ var databaseCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(databaseCmd)
+	// @todo: This needs reworking
+	//rootCmd.AddCommand(resyncCmd)
 }

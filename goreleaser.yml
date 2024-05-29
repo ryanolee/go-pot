@@ -1,7 +1,6 @@
 builds:
   -
     id: "go-pot"
-    binary: go-pot"
-    gobinary: "go1.21"
+    binary: "go-pot"
     env:
       - CGO_ENABLED=0
