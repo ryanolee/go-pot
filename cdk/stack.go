@@ -25,10 +25,6 @@ var (
 	potData = []PotStackData{
 		{
 			Region: "eu-west-1",
-			Nodes:  10,
-		},
-		{
-			Region: "us-east-1",
 			Nodes:  3,
 		},
 	}
@@ -90,7 +86,7 @@ func NewMetricsStack(scope constructs.Construct, id string, props *MetricsStackP
 	pushGatewaySg.AddIngressRule(awsec2.Peer_AnyIpv4(), awsec2.Port_Tcp(jsii.Number(9093)), jsii.String("Ingress from prometheus (Internet)"), jsii.Bool(false))
 
 	pushGateway := awsec2.NewInstance(stack, jsii.String("PrometheusMetricsNode"), &awsec2.InstanceProps{
-		InstanceType: awsec2.NewInstanceType(jsii.String("t3.small")),
+		InstanceType: awsec2.NewInstanceType(jsii.String("t3.nano")),
 		MachineImage: awsec2.NewAmazonLinuxImage(&awsec2.AmazonLinuxImageProps{
 			Generation: awsec2.AmazonLinuxGeneration_AMAZON_LINUX_2,
 		}),
@@ -203,7 +199,8 @@ WantedBy=multi-user.target" > /etc/systemd/system/prometheus.service`),
 		jsii.String(`sudo yum install httpd-tools -y`),
 		awscdk.Fn_Sub(jsii.String("sudo htpasswd -c -b /etc/nginx/.htpasswd ${USERNAME} ${PASSWORD}"), &map[string]*string{
 			"USERNAME": props.MetricsServerCreds.Username,
-			// @todo Pull this from Secrets Manager
+			// N.b - This configuration is not secure and should be replaced with a secrets manager 
+			//       replicated secret. This is for demonstration purposes only. (And to be cheap...)
 			"PASSWORD": props.MetricsServerCreds.Password,
 		}),
 		jsii.String("sudo service nginx restart"),
@@ -247,6 +244,7 @@ func NewPotStackStack(scope constructs.Construct, id string, props *PotStackProp
 		Directory: jsii.String(path.Join(filepath.Dir(filename), "..")),
 		Exclude:   jsii.Strings("./cdk"),
 		Target:    jsii.String("prod"),
+		Platform:  awsecrassets.Platform_LINUX_AMD64(),
 	})
 
 	taskDefinition := awsecs.NewFargateTaskDefinition(stack, jsii.String("TaskDefinition"), &awsecs.FargateTaskDefinitionProps{
@@ -261,6 +259,7 @@ func NewPotStackStack(scope constructs.Construct, id string, props *PotStackProp
 	logGroup := awslogs.NewLogGroup(stack, jsii.String("LogGroup"), &awslogs.LogGroupProps{
 		LogGroupName: jsii.String("/go-pot/nodes"),
 		Retention:    awslogs.RetentionDays_ONE_WEEK,
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 
 	container := taskDefinition.AddContainer(jsii.String("TaskDefinition"), &awsecs.ContainerDefinitionOptions{
@@ -272,12 +271,24 @@ func NewPotStackStack(scope constructs.Construct, id string, props *PotStackProp
 		}),
 
 		Environment: &map[string]*string{
-			"PUSH_GATEWAY_ADDRESS": awscdk.Fn_Sub(jsii.String("${PUBLIC_DNS}:9093"), &map[string]*string{
+			// Server configuration
+			"GOPOT__SERVER__PORT": jsii.String("80"),
+			"GOPOT__SERVER__HOST": jsii.String("0.0.0.0"),
+			
+			// Telemetry configuration
+			"GOPOT__TELEMETRY__PUSH_GATEWAY__ENABLED": jsii.String("true"),
+			"GOPOT__TELEMETRY__PUSH_GATEWAY__ENDPOINT": awscdk.Fn_Sub(jsii.String("${PUBLIC_DNS}:9093"), &map[string]*string{
 				"PUBLIC_DNS": props.MetricsServer.InstancePublicDnsName(),
 			}),
-			"PUSH_GATEWAY_USERNAME": props.MetricsServerCreds.Username,
-			"PUSH_GATEWAY_PASSWORD": props.MetricsServerCreds.Password,
-			"PUSH_GATEWAY_REGION":   stack.Region(),
+			"GOPOT__TELEMETRY__PUSH_GATEWAY__USERNAME": props.MetricsServerCreds.Username,
+			"GOPOT__TELEMETRY__PUSH_GATEWAY__PASSWORD": props.MetricsServerCreds.Password,
+
+			// Recast configuration
+			"GOPOT__RECAST__ENABLED": jsii.String("true"),
+
+			// Cluster configuration
+			"GOPOT__CLUSTER__ENABLED": jsii.String("true"),
+			"GOPOT__CLUSTER__MODE": jsii.String("fargate_ecs"),
 		},
 
 		PortMappings: &[]*awsecs.PortMapping{
@@ -380,7 +391,6 @@ func main() {
 // be deployed. For more information see: https://docs.aws.amazon.com/cdk/latest/guide/environments.html
 func env(region string) *awscdk.Environment {
 	return &awscdk.Environment{
-		Account: jsii.String("123456789012"),
 		Region:  jsii.String(region),
 	}
 }

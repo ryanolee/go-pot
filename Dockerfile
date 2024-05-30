@@ -20,6 +20,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /app/main
 FROM scratch as prod
 
 COPY --from=prod-build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=prod-build /app/main /app/go-pot
-
-ENTRYPOINT ["/app/go-pot", "start", '--host', '0.0.0.0']
+COPY --from=prod-build /app/main /app/main
+CMD ["start", "--host", "0.0.0.0"]
+ENTRYPOINT ["/app/main"]

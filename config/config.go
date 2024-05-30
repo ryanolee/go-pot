@@ -50,11 +50,11 @@ type (
         BindPort int `koanf:"bind_port" validate:"required_if=Enabled true,omitempty,min=1,max=65535"`
 
         // Known Peers
-        KnownPeerIps []string `koanf:"known_peer_ips" validate:"required_if=Enabled true,required_if=Mode lan Mode wan,omitempty"`
+        KnownPeerIps []string `koanf:"known_peer_ips" validate:"required_if=Mode lan Mode wan,omitempty"`
 
         // Host Ip Address
         // Advertisement IP Address for this node to use against other nodes in the cluster
-        AdvertiseIp string `koanf:"advertise_ip" validate:"required_if=Enabled true,required_if=Mode lan Mode wan,omitempty,ipv4"`
+        AdvertiseIp string `koanf:"advertise_ip" validate:"required_if=Mode lan Mode wan,omitempty,ipv4"`
 
         // Enable member list logging output
         EnableLogging bool `koanf:"enable_logging"`
