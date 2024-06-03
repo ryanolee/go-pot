@@ -1,5 +1,5 @@
 # go-pot 🍯
-A HTTP tarpit written in Go designed to maximize bot misery through very slowly feeding them an infinite stream of fake secrets. (Originally the subject of a talk)
+A HTTP tarpit written in Go designed to maximize bot misery through very slowly feeding them an infinite stream of fake secrets. 
 
 <img src="docs/img/gopher.png" width="400px" />
 
@@ -49,3 +49,5 @@ The go pot logo created by `@_iroshi` and is licensed under the [CC0](https://cr
 ## What the future holds 🔮
 - **More protocols**: Support for more protocols is planned. Including `ssh`, `sql`, `ftp`, `smtp` and more. Anything that can be stalled will be stalled and must be stalled!
 - **Tests**: There are *no* unit tests. The was originally built as a proof of concept for a talk and has been refactored several times since. It is still in need of firmer testing.
+
+(Originally the subject of a talk for (Birmingham go)[https://www.meetup.com/golang-birmingham/])
