@@ -26,10 +26,15 @@ type (
 		telemetry    *Telemetry
 		shutdownChan chan bool
 		shutdowner   fx.Shutdowner
+
+		// Internals
+		minimumRecastInterval int
+		maximumRecastInterval int
+		timeWastedRatio       float64
 	}
 )
 
-func NewRecast(lf fx.Lifecycle, shutdowner fx.Shutdowner, config *config.Config, telemetry *Telemetry ) (*Recast, error) {
+func NewRecast(lf fx.Lifecycle, shutdowner fx.Shutdowner, config *config.Config, telemetry *Telemetry) (*Recast, error) {
 	if !config.Recast.Enabled {
 		return nil, errors.New("Recast is not enabled")
 	}
@@ -37,18 +42,26 @@ func NewRecast(lf fx.Lifecycle, shutdowner fx.Shutdowner, config *config.Config,
 	if telemetry == nil {
 		return nil, errors.New("Telemetry is nil")
 	}
-	
+
 	recast := &Recast{
 		shutdownChan: make(chan bool),
 		telemetry:    telemetry,
 		shutdowner:   shutdowner,
+
+		minimumRecastInterval: config.Recast.MinimumRecastIntervalMin,
+		maximumRecastInterval: config.Recast.MaximumRecastIntervalMin,
+		timeWastedRatio:       config.Recast.TimeWastedRatio,
 	}
-	
 
 	// Terminate the recast checker when the application is shutting down
 	lf.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			recast.Shutdown()
+			recast.StartChecking()
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			recast.shutdownChan <- true
+			close(recast.shutdownChan)
 			return nil
 		},
 	})
@@ -61,7 +74,10 @@ func (r *Recast) StartChecking() {
 		rand := rand.NewSeededRandFromTime()
 		cumulativeWastedTime := 0.0
 		for {
-			recastCheckDuration := time.Duration(rand.RandomInt(minimumRecastInterval, maximumRecastInterval)) * time.Minute
+			// Sleep for a random amount of time between the minimum and maximum recast interval
+			recastWaitTime := rand.RandomInt(r.minimumRecastInterval, r.minimumRecastInterval)
+			zap.L().Sugar().Info("Recast Waiting", "timeUntilNextCheck", recastWaitTime)
+			recastCheckDuration := time.Duration(recastWaitTime) * time.Minute
 			select {
 			case <-time.After(recastCheckDuration):
 				wastedTimeSinceLastCheck := r.telemetry.GetWastedTime() - cumulativeWastedTime
@@ -80,8 +96,4 @@ func (r *Recast) StartChecking() {
 			}
 		}
 	}()
-}
-
-func (r *Recast) Shutdown() {
-	r.shutdownChan <- true
 }

@@ -23,25 +23,25 @@ type (
 		NodeName string
 	}
 	Telemetry struct {
-		nodeName                string
+		nodeName string
 
 		// Push Gateway
 		pushGatewayEnabled      bool
-		pushGatewayEndpoint      string
-		pushGatewayIntervalSecs int   
+		pushGatewayEndpoint     string
+		pushGatewayIntervalSecs int
 		pushGatewayUsername     string
 		pushGatewayPassword     string
 
 		// Server
 		serverEnabled bool
 		serverPort    int
-		serverPath	  string
+		serverPath    string
 		app           *fiber.App
 
 		// Prometheus
-		metricsTrackTimeWasted bool
+		metricsTrackTimeWasted       bool
 		metricsTrackSecretsGenerated bool
-		
+
 		// Internals
 		wastedTimeCounter       prometheus.Counter
 		secretsGeneratedCounter prometheus.Counter
@@ -55,21 +55,22 @@ func NewTelemetry(lf fx.Lifecycle, config *config.Config) (*Telemetry, error) {
 	}
 
 	telemetry := &Telemetry{
-		nodeName:           config.Telemetry.NodeName,
-		
+		nodeName: config.Telemetry.NodeName,
+
 		// Push Gateway
-		pushGatewayEnabled: config.Telemetry.PushGateway.Enabled,
-		pushGatewayEndpoint: config.Telemetry.PushGateway.Endpoint,
+		pushGatewayEnabled:      config.Telemetry.PushGateway.Enabled,
+		pushGatewayEndpoint:     config.Telemetry.PushGateway.Endpoint,
 		pushGatewayIntervalSecs: config.Telemetry.PushGateway.PushIntervalSecs,
-		pushGatewayUsername: config.Telemetry.PushGateway.Username,
+		pushGatewayUsername:     config.Telemetry.PushGateway.Username,
+		pushGatewayPassword:     config.Telemetry.PushGateway.Password,
 
 		// Server
 		serverEnabled: config.Telemetry.Prometheus.Enabled,
-		serverPort: config.Telemetry.Prometheus.Port,
-		serverPath: config.Telemetry.Prometheus.Path,
+		serverPort:    config.Telemetry.Prometheus.Port,
+		serverPath:    config.Telemetry.Prometheus.Path,
 
 		// Metrics
-		metricsTrackTimeWasted: config.Telemetry.Metrics.TrackTimeWasted,
+		metricsTrackTimeWasted:       config.Telemetry.Metrics.TrackTimeWasted,
 		metricsTrackSecretsGenerated: config.Telemetry.Metrics.TrackSecretsGenerated,
 
 		// Internals
@@ -133,7 +134,7 @@ func (t *Telemetry) StartMetricsServer() {
 	logger := logging.NewServerLogger(zap.L().Named("metrics-server"))
 	logger.Use(t.app)
 	t.app.Get(t.serverPath, adaptor.HTTPHandler(promhttp.HandlerFor(t.getPrometheusRegistry(), promhttp.HandlerOpts{})))
-	go func () {t.app.Listen(fmt.Sprintf(":%d", t.serverPort))} ()	
+	go func() { t.app.Listen(fmt.Sprintf(":%d", t.serverPort)) }()
 }
 
 func (t *Telemetry) Stop() {
@@ -177,11 +178,9 @@ func (t *Telemetry) getPrometheusRegistry() *prometheus.Registry {
 	if t.metricsTrackSecretsGenerated {
 		registry.MustRegister(t.secretsGeneratedCounter)
 	}
-	
+
 	return registry
 }
-
-
 
 func (t *Telemetry) getAuthedClient() *push.Pusher {
 	client := push.New(t.pushGatewayEndpoint, t.nodeName)

@@ -13,7 +13,7 @@ A HTTP tarpit written in Go designed to maximize bot misery through very slowly 
 Go pot is distributed as a standalone go binary or docker image. You can download the latest release from the [releases page](https://github.com/ryanolee/go-pot/releases). Docker images are available on the [ghcr.io registry](https://github.com/ryanolee/go-pot/pkgs/container/go-pot).
 
 ## Rationale
-There is a constant storm of bots scanning the internet for vulnerabilities. These bots will try to brute force vulnrable
+There is a constant storm of bots scanning the internet for vulnerabilities. These bots aim to find and exploit vulnerable services as quickly as possible by scouring the internet for vulnrable configurations. Go pot aims to slow down these bots down by trying to keep them connected for as long as possible. And pollute their databases with fake secrets in the process.
 
 ### Docker
 In order to run an example instance of go-pot using docker, you can use the following command:
