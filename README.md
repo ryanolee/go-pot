@@ -9,11 +9,9 @@ A HTTP tarpit written in Go designed to maximize bot misery through very slowly 
 - **Small Profile**: Go pot can run on extremely low resource machines and is designed to be as lightweight as possible.
 - **Clustering Support**: Go pot can be run in a clustered mode where multiple instances can share information about how long bots are willing to wait for a response. Also in cluster mode nodes can be configured to restart / reallocate IP addresses to avoid being blacklisted by connecting clients.
 - **Customizable**: Go pot can be customized to respond with different different response times support for more protocols is planned.
+
 ## Installation
 Go pot is distributed as a standalone go binary or docker image. You can download the latest release from the [releases page](https://github.com/ryanolee/go-pot/releases). Docker images are available on the [ghcr.io registry](https://github.com/ryanolee/go-pot/pkgs/container/go-pot).
-
-## Rationale
-There is a constant storm of bots scanning the internet for vulnerabilities. These bots aim to find and exploit vulnerable services as quickly as possible by scouring the internet for vulnrable internet connected services.  Go pot aims to slow down these bots down by trying to keep them connected for as long as possible. And pollute their databases with fake secrets in the process. This extends to more conventional use cases where go pot can be used in a more conventional setup to dispatch unwanted traffic to service that can be used to deter further attacks.
 
 ### Docker
 In order to run an example instance of go-pot using docker, you can use the following command:
