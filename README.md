@@ -1,5 +1,5 @@
 # go-pot 🍯
-A HTTP tarpit written in Go designed to maximize bot misery through very slowly feeding them an infinite stream of fake secrets.
+A HTTP tarpit written in Go designed to maximize bot misery through very slowly feeding them an infinite stream of fake secrets. (Originally the subject of a talk)
 
 <img src="docs/img/gopher.png" width="400px" />
 
@@ -39,6 +39,8 @@ Go pot can be deployed in a variety of ways. See the [cdk](cdk) directory for an
 
 ## Contributing
 Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information on how to contribute.
+
+See the internal [INTERNALS.md](INTERNALS.md) file for more information on how go-pot works.
 
 ## Credits
 Go pot was originally inspired by the (Reverse slow loris)[https://github.com/nickhuber/reverse-slowloris] project by [Nick Huber](https://github.com/nickhuber)
