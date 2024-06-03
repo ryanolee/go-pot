@@ -45,3 +45,7 @@ See the internal [INTERNALS.md](INTERNALS.md) file for more information on how g
 ## Credits
 Go pot was originally inspired by the (Reverse slow loris)[https://github.com/nickhuber/reverse-slowloris] project by [Nick Huber](https://github.com/nickhuber)
 The go pot logo created by `@_iroshi` and is licensed under the [CC0](https://creativecommons.org/publicdomain/zero/1.0/) license.
+
+## What the future holds 🔮
+- **More protocols**: Support for more protocols is planned. Including `ssh`, `sql`, `ftp`, `smtp` and more. Anything that can be stalled will be stalled and must be stalled!
+- **Tests**: There are *no* unit tests. The was originally built as a proof of concept for a talk and has been refactored several times since. It is still in need of firmer testing.
