@@ -27,6 +27,9 @@ In order to run go-pot as a standalone binary, you can download the latest relea
 ```
 Then visit `http://localhost:8080` in your browser to see the go-pot in action. ( Visiting `http://localhost:8080/somthing.xml`, `http://localhost:8080/someething.sql` ect.. will start generating data in the respective format)
 
+## Usage
+Please refer to the [examples](examples/) folder for examples of how go pot can be used.
+
 ## Configuration
 Configuration for go-pot follows the following order of precedence (From lowest to highest):
  * **Defaults**: Default values can be found in the [config/default.go](config/default.go) file.
