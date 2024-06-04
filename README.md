@@ -25,7 +25,7 @@ In order to run go-pot as a standalone binary, you can download the latest relea
 ```bash
 ./go-pot start
 ```
-Then visit `http://localhost:8080` in your browser to see the go-pot in action.
+Then visit `http://localhost:8080` in your browser to see the go-pot in action. ( Visiting `http://localhost:8080/somthing.xml`, `http://localhost:8080/someething.sql` ect.. will start generating data in the respective format)
 
 ## Configuration
 Configuration for go-pot follows the following order of precedence (From lowest to highest):
@@ -43,11 +43,11 @@ Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) fil
 See the internal [INTERNALS.md](INTERNALS.md) file for more information on how go-pot works.
 
 ## Credits
-Go pot was originally inspired by the (Reverse slow loris)[https://github.com/nickhuber/reverse-slowloris] project by [Nick Huber](https://github.com/nickhuber)
+Go pot was originally inspired by the [Reverse slow loris](https://github.com/nickhuber/reverse-slowloris) project by [Nick Huber](https://github.com/nickhuber)
 The go pot logo created by `@_iroshi` and is licensed under the [CC0](https://creativecommons.org/publicdomain/zero/1.0/) license.
 
 ## What the future holds 🔮
 - **More protocols**: Support for more protocols is planned. Including `ssh`, `sql`, `ftp`, `smtp` and more. Anything that can be stalled will be stalled and must be stalled!
 - **Tests**: There are *no* unit tests. The was originally built as a proof of concept for a talk and has been refactored several times since. It is still in need of firmer testing.
 
-(Originally the subject of a talk for (Birmingham go)[https://www.meetup.com/golang-birmingham/])
+(Originally the subject of a talk for [Birmingham go](https://www.meetup.com/golang-birmingham/))
