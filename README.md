@@ -16,7 +16,7 @@ Go pot is distributed as a standalone go binary or docker image. You can downloa
 ### Docker
 In order to run an example instance of go-pot using docker, you can use the following command:
 ```bash
-docker run -p 8080:8080 --rm ghcr.io/ryanolee/go-pot:latest --host=0.0.0.0 --port=8080
+docker run -p 8080:8080 --rm ghcr.io/ryanolee/go-pot:latest start --host=0.0.0.0 --port=8080
 ```
 See the `examples` directory for more examples of how to run go-pot in various configurations.
 
