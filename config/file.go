@@ -9,11 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func loadConfigFile(k *koanf.Koanf, command *cobra.Command) (error) {
-    configFile := command.Flag("config-file").Value.String()
-    if configFile == "" {
-        configFile = os.Getenv("GO_POT__CONFIG_FILE")
-    }
+func loadConfigFile(k *koanf.Koanf, command *cobra.Command) error {
+	configFile := command.Flag("config-file").Value.String()
+	if configFile == "" {
+		configFile = os.Getenv("GOPOT__CONFIG_FILE")
+	}
 
 	if configFile == "" {
 		return nil
