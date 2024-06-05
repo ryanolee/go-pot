@@ -16,10 +16,10 @@ import (
 
 type (
 	Server struct {
-		App *fiber.App
+		App        *fiber.App
 		ListenPort int
 		ListenHost string
-		Logger *zap.Logger
+		Logger     *zap.Logger
 
 		stallerFactory *stall.HttpStallerFactory
 	}
@@ -29,7 +29,7 @@ func NewServer(
 	lf fx.Lifecycle,
 	shutdown fx.Shutdowner,
 	cfg *config.Config,
-	logging logging.IServerLogger, 
+	logging logging.IServerLogger,
 	stallerFactory *stall.HttpStallerFactory,
 ) *Server {
 	server := &Server{
@@ -37,6 +37,7 @@ func NewServer(
 			IdleTimeout:           time.Second * 15,
 			ReduceMemoryUsage:     true,
 			DisableStartupMessage: true,
+			Network:               cfg.Server.Network,
 		}),
 
 		ListenPort: cfg.Server.Port,
@@ -65,12 +66,12 @@ func (s *Server) Start() error {
 	})
 
 	s.App.Get("/*", func(c *fiber.Ctx) error {
-		
+
 		staller, err := s.stallerFactory.FromFiberContext(c)
 		if err != nil {
 			return err
 		}
-		
+
 		// Set the correct content type based on the context
 		c.Response().Header.SetContentType(staller.GetContentType())
 
@@ -79,4 +80,3 @@ func (s *Server) Start() error {
 
 	return s.App.Listen(fmt.Sprintf("%s:%d", s.ListenHost, s.ListenPort))
 }
-
