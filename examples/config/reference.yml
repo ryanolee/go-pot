@@ -10,6 +10,10 @@ server:
   # Host for the go-pot server to listen on
   host: 127.0.0.1
 
+  network:
+    # The network stack to listen on. One of: tcp, tcp4, tcp6
+    network: "tcp4"
+
 # Configuration for logging related settings for go-pot
 logging:
   # One of: debug, info, warn, error, dpanic, panic, fatal

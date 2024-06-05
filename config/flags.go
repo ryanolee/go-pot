@@ -9,124 +9,131 @@ import (
 )
 
 type flagConfig struct {
-	flagName string
-	configKey string
-	description string
-	configType string
+	flagName     string
+	configKey    string
+	description  string
+	configType   string
 	defaultValue interface{}
 }
 
 var flagsToConfigMap = map[string]flagConfig{
 	"port": {
-		flagName: "port",
-		configKey: "server.port",
-		description: "The port for the honeypot to listen on.",
-		configType: "int",
+		flagName:     "port",
+		configKey:    "server.port",
+		description:  "The port for the honeypot to listen on.",
+		configType:   "int",
 		defaultValue: defaultConfig.Server.Port,
 	},
 	"host": {
-		flagName: "host",
-		configKey: "server.host",
-		description: "The host for the honeypot to listen on.",
-		configType: "string",
+		flagName:     "host",
+		configKey:    "server.host",
+		description:  "The host for the honeypot to listen on.",
+		configType:   "string",
 		defaultValue: defaultConfig.Server.Host,
 	},
+	"network": {
+		flagName:     "network",
+		configKey:    "server.network",
+		description:  "The network stack to use (tcp, tcp4, tcp6).",
+		configType:   "string",
+		defaultValue: defaultConfig.Server.Network,
+	},
 	"cluster-mode-enabled": {
-		flagName: "cluster-mode-enabled",
-		configKey: "cluster.enabled",
-		description: "Enable cluster mode for connectivity with other honeypots.",
-		configType: "bool",
+		flagName:     "cluster-mode-enabled",
+		configKey:    "cluster.enabled",
+		description:  "Enable cluster mode for connectivity with other honeypots.",
+		configType:   "bool",
 		defaultValue: defaultConfig.Cluster.Enabled,
 	},
 	"cluster-advertise-ip": {
-		flagName: "cluster-advertise-ip",
-		configKey: "cluster.advertise_ip",
-		description: "The IP address to advertise to other honeypots in the cluster.",
-		configType: "string",
+		flagName:     "cluster-advertise-ip",
+		configKey:    "cluster.advertise_ip",
+		description:  "The IP address to advertise to other honeypots in the cluster.",
+		configType:   "string",
 		defaultValue: defaultConfig.Cluster.AdvertiseIp,
 	},
 	"cluster-known-peers": {
-		flagName: "cluster-known-peers",
-		configKey: "cluster.known_peers",
-		description: "A comma separated list of known peers to connect to.",
-		configType: "string",
+		flagName:     "cluster-known-peers",
+		configKey:    "cluster.known_peers",
+		description:  "A comma separated list of known peers to connect to.",
+		configType:   "string",
 		defaultValue: "",
 	},
 	"cluster-port": {
-		flagName: "cluster-port",
-		configKey: "cluster.bind_port",
-		description: "The port for the honeypot to listen on for cluster communication. [This port should not be exposed to the internet.]",
-		configType: "int",
+		flagName:     "cluster-port",
+		configKey:    "cluster.bind_port",
+		description:  "The port for the honeypot to listen on for cluster communication. [This port should not be exposed to the internet.]",
+		configType:   "int",
 		defaultValue: defaultConfig.Cluster.BindPort,
 	},
 	"cluster-logging-enabled": {
-		flagName: "cluster-logging-enabled",
-		configKey: "cluster.enable_logging",
-		description: "Enable cluster communication logging. (Useful for debugging cluster connectivity issues)",
-		configType: "bool",
+		flagName:     "cluster-logging-enabled",
+		configKey:    "cluster.enable_logging",
+		description:  "Enable cluster communication logging. (Useful for debugging cluster connectivity issues)",
+		configType:   "bool",
 		defaultValue: defaultConfig.Cluster.EnableLogging,
 	},
 	"telemetry-name": {
-		flagName: "telemetry-name",
-		configKey: "telemetry.node_name",
-		description: "The telemetry node name.",
-		configType: "string",
+		flagName:     "telemetry-name",
+		configKey:    "telemetry.node_name",
+		description:  "The telemetry node name.",
+		configType:   "string",
 		defaultValue: defaultConfig.Telemetry.NodeName,
 	},
 	"push-gateway-enabled": {
-		flagName: "push-gateway-enabled",
-		configKey: "telemetry.push_gateway.enabled",
-		description: "Enable prometheus push gateway integration.",
-		configType: "bool",
+		flagName:     "push-gateway-enabled",
+		configKey:    "telemetry.push_gateway.enabled",
+		description:  "Enable prometheus push gateway integration.",
+		configType:   "bool",
 		defaultValue: defaultConfig.Telemetry.PushGateway.Enabled,
 	},
 	"push-gateway-url": {
-		flagName: "push-gateway-url",
-		configKey: "telemetry.push_gateway.endpoint",
-		description: "The URL for the prometheus push gateway.",
-		configType: "string",
+		flagName:     "push-gateway-url",
+		configKey:    "telemetry.push_gateway.endpoint",
+		description:  "The URL for the prometheus push gateway.",
+		configType:   "string",
 		defaultValue: defaultConfig.Telemetry.PushGateway.Endpoint,
 	},
 	"prometheus-enabled": {
-		flagName: "prometheus-enabled",
-		configKey: "telemetry.prometheus.enabled",
-		description: "Enable prometheus metrics collection endpoint.",
-		configType: "bool",
+		flagName:     "prometheus-enabled",
+		configKey:    "telemetry.prometheus.enabled",
+		description:  "Enable prometheus metrics collection endpoint.",
+		configType:   "bool",
 		defaultValue: defaultConfig.Telemetry.Prometheus.Enabled,
 	},
 	"prometheus-path": {
-		flagName: "prometheus-path",
-		configKey: "telemetry.prometheus.path",
-		description: "The path for the prometheus metrics collection endpoint.",
-		configType: "string",
+		flagName:     "prometheus-path",
+		configKey:    "telemetry.prometheus.path",
+		description:  "The path for the prometheus metrics collection endpoint.",
+		configType:   "string",
 		defaultValue: defaultConfig.Telemetry.Prometheus.Path,
 	},
 	"prometheus-port": {
-		flagName: "prometheus-port",
-		configKey: "telemetry.prometheus.port",
-		description: "The port for the prometheus metrics collection endpoint.",
-		configType: "int",
+		flagName:     "prometheus-port",
+		configKey:    "telemetry.prometheus.port",
+		description:  "The port for the prometheus metrics collection endpoint.",
+		configType:   "int",
 		defaultValue: defaultConfig.Telemetry.Prometheus.Port,
 	},
 	"recast-enabled": {
-		flagName: "recast-enabled",
-		configKey: "recast.enabled",
-		description: "Enable recast metrics collection.",
-		configType: "bool",
+		flagName:     "recast-enabled",
+		configKey:    "recast.enabled",
+		description:  "Enable recast metrics collection.",
+		configType:   "bool",
 		defaultValue: defaultConfig.Recast.Enabled,
 	},
 	"maximum-connections": {
-		flagName: "maximum-connections",
-		configKey: "staller.maximum_connections",
-		description: "The maximum number of open connections to the honeypot to allow.",
-		configType: "int",
+		flagName:     "maximum-connections",
+		configKey:    "staller.maximum_connections",
+		description:  "The maximum number of open connections to the honeypot to allow.",
+		configType:   "int",
 		defaultValue: defaultConfig.Staller.MaximumConnections,
 	},
 	"bytes-per-second": {
-		flagName: "bytes-per-second",
-		configKey: "staller.bytes_per_second",
-		description: "The number of bytes to transfer per second.",
-		configType: "int",
+		flagName:     "bytes-per-second",
+		configKey:    "staller.bytes_per_second",
+		description:  "The number of bytes to transfer per second.",
+		configType:   "int",
 		defaultValue: defaultConfig.Staller.BytesPerSecond,
 	},
 }
@@ -143,7 +150,7 @@ func BindConfigFlags(cmd *cobra.Command) *cobra.Command {
 			cmd.Flags().Bool(flag.flagName, flag.defaultValue.(bool), flag.description)
 		}
 	}
-	
+
 	return cmd
 }
 
