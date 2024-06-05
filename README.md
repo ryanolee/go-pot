@@ -33,9 +33,9 @@ Please refer to the [examples](examples/) folder for examples of how go pot can 
 ## Configuration
 Configuration for go-pot follows the following order of precedence (From lowest to highest):
  * **Defaults**: Default values can be found in the [config/default.go](config/default.go) file.
- * **Config file**: A configuration file path can be specified using the `--config-file` flag or using the `GO_POT__CONFIG_FILE` environment variable. An example reference configuration file can be found in the [examples/config/reference.yml](examples/config/reference.yml) file.
+ * **Config file**: A configuration file path can be specified using the `--config-file` flag or using the `GOPOT__CONFIG_FILE` environment variable. An example reference configuration file can be found in the [examples/config/reference.yml](examples/config/reference.yml) file.
  * **Command line flags**: Command line flags can be used to override configuration values. Run `go-pot --help` to see a list of available flags.
- * **Environment variables**: Environment variables can be used to override configuration values. Environment variables are prefixed with `GO_POT__` and deliminated with "__"'s for further keys. For instance `server.host` can be overridden with `GO_POT__SERVER__HOST`. 
+ * **Environment variables**: Environment variables can be used to override configuration values. Environment variables are prefixed with `GOPOT__` and deliminated with "__"'s for further keys. For instance `server.host` can be overridden with `GOPOT__SERVER__HOST`. 
 
 ## Deployment
 Go pot can be deployed in a variety of ways. See the [cdk](cdk) directory for an example of how to deploy go-pot using the AWS CDK on ECS Fargate for which it has native clustering support.
