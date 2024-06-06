@@ -32,12 +32,18 @@ func NewServer(
 	logging logging.IServerLogger,
 	stallerFactory *stall.HttpStallerFactory,
 ) *Server {
+	// Only enable the trusted proxy check if we have trusted proxies
+	trustedProxyCheck := len(cfg.Server.TrustedProxies) > 0
 	server := &Server{
 		App: fiber.New(fiber.Config{
-			IdleTimeout:           time.Second * 15,
-			ReduceMemoryUsage:     true,
-			DisableStartupMessage: true,
-			Network:               cfg.Server.Network,
+			IdleTimeout:             time.Second * 15,
+			ReduceMemoryUsage:       true,
+			DisableStartupMessage:   true,
+			Network:                 cfg.Server.Network,
+			EnableIPValidation:      true,
+			ProxyHeader:             cfg.Server.ProxyHeader,
+			TrustedProxies:          cfg.Server.TrustedProxies,
+			EnableTrustedProxyCheck: trustedProxyCheck,
 		}),
 
 		ListenPort: cfg.Server.Port,
