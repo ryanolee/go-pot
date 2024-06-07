@@ -10,9 +10,16 @@ server:
   # Host for the go-pot server to listen on
   host: 127.0.0.1
 
-  network:
-    # The network stack to listen on. One of: tcp, tcp4, tcp6
-    network: "tcp4"
+  # The network stack to listen on. One of: tcp, tcp4, tcp6
+  network: "tcp4"
+
+  # Trusted proxies for the server. This is a comma separated list of CIDR ranges, or Ip addresses (v4 or v6)
+  trusted_proxies: ""
+
+  # The header to use for the proxy header. This is the header that will be used to determine the IP address of the client
+  proxy_header: "X-Forwarded-For"
+
+  
 
 # Configuration for logging related settings for go-pot
 logging:

@@ -38,7 +38,8 @@ type (
 		ProxyHeader string `koanf:"proxy_header" validate:"omitempty"`
 
 		// The list of trusted proxies to use if the application is behind a proxy
-		TrustedProxies []string `koanf:"trusted_proxies" validate:"omitempty"`
+		// Must be a list of IP addresses or CIDR ranges
+		TrustedProxies []string `koanf:"trusted_proxies" validate:"omitempty,dive,ipv4|ipv6|cidr|cidrv6"`
 	}
 
 	// Cluster specific configuration
@@ -244,11 +245,8 @@ func NewConfig(cmd *cobra.Command) (*Config, error) {
 	}
 
 	// Handle special cases
-	if k.Get("cluster.known_peer_ips") != "" {
-		k.Set("cluster.known_peer_ips", strings.Split(k.String("cluster.known_peer_ips"), ","))
-	} else {
-		k.Set("cluster.known_peer_ips", []string{})
-	}
+	setStringSlice(k, "cluster.known_peer_ips")
+	setStringSlice(k, "server.trusted_proxies")
 
 	var cfg *Config
 	if err := k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "koanf"}); err != nil {
@@ -261,4 +259,14 @@ func NewConfig(cmd *cobra.Command) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// Sets the value of a string slice if the value is not empty
+func setStringSlice(k *koanf.Koanf, key string) {
+	stringVal := k.String(key)
+	if stringVal != "" && stringVal != "[]" {
+		k.Set(key, strings.Split(k.String(key), ","))
+	} else {
+		k.Delete(key)
+	}
 }
