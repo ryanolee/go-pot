@@ -5,9 +5,11 @@ import "go.uber.org/zap/zapcore"
 // Default configuration values for the application
 var defaultConfig = Config{
 	Server: serverConfig{
-		Port:    8080,
-		Host:    "127.0.0.1",
-		Network: "tcp4",
+		Port:           8080,
+		Host:           "127.0.0.1",
+		Network:        "tcp4",
+		ProxyHeader:    "",
+		TrustedProxies: []string{},
 	},
 	Logging: loggingConfig{
 		Level: zapcore.InfoLevel.String(),

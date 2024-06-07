@@ -33,6 +33,12 @@ type (
 
 		// Network stack to use (tcp, tcp4, tcp6)
 		Network string `koanf:"network" validate:"required,oneof=tcp tcp4 tcp6"`
+
+		// The proxy header to use if the application is behind a proxy
+		ProxyHeader string `koanf:"proxy_header" validate:"omitempty"`
+
+		// The list of trusted proxies to use if the application is behind a proxy
+		TrustedProxies []string `koanf:"trusted_proxies" validate:"omitempty"`
 	}
 
 	// Cluster specific configuration
