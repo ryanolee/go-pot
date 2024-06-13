@@ -8,7 +8,7 @@ import (
 
 	"github.com/patrickmn/go-cache"
 	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/http/gossip/action"
+	"github.com/ryanolee/ryan-pot/core/gossip/action"
 	"go.uber.org/zap"
 )
 

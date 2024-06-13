@@ -6,7 +6,7 @@ import (
 	"regexp/syntax"
 	"strings"
 
-	"github.com/ryanolee/ryan-pot/http/metrics"
+	"github.com/ryanolee/ryan-pot/core/metrics"
 	"github.com/ryanolee/ryan-pot/internal/regen"
 	"github.com/ryanolee/ryan-pot/rand"
 	"gopkg.in/yaml.v3"

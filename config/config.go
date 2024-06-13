@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	validate "github.com/go-playground/validator/v10"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/structs"
 	"github.com/knadh/koanf/v2"
@@ -15,6 +14,7 @@ type (
 	// This struct covers the entire application configuration
 	Config struct {
 		Server         serverConfig         `koanf:"server"`
+		FtpServer      ftpServerConfig      `koanf:"ftp_server"`
 		Logging        loggingConfig        `koanf:"logging"`
 		Cluster        clusterConfig        `koanf:"cluster"`
 		TimeoutWatcher timeoutWatcherConfig `koanf:"timeout_watcher"`
@@ -25,6 +25,9 @@ type (
 
 	// Server specific configuration
 	serverConfig struct {
+		// If the server should be enabled
+		Enabled bool `koanf:"enabled"`
+
 		// Server port to listen on
 		Port int `koanf:"port" validate:"required,min=1,max=65535"`
 
@@ -40,6 +43,21 @@ type (
 		// The list of trusted proxies to use if the application is behind a proxy
 		// Must be a list of IP addresses or CIDR ranges
 		TrustedProxies []string `koanf:"trusted_proxies" validate:"omitempty,dive,ipv4|ipv6|cidr|cidrv6"`
+	}
+
+	// Settings relating to the FTP server
+	ftpServerConfig struct {
+		// If the FTP server should be enabled
+		Enabled bool `koanf:"enabled"`
+
+		// The port to listen on N.b this is the control port
+		// port 20 is used for data transfer by default in active mode.
+		Port int `koanf:"port" validate:"required,min=1,max=65535"`
+
+		Host string `koanf:"host" validate:"required"`
+
+		// Lower bound of ports exposed for passive mode default 50000-50100
+		PassivePortRange string `koanf:"passive_port_range" validate:"omitempty,port_range"`
 	}
 
 	// Cluster specific configuration
@@ -253,7 +271,7 @@ func NewConfig(cmd *cobra.Command) (*Config, error) {
 		return nil, err
 	}
 
-	validator := validate.New()
+	validator := newConfigValidator()
 	if err := validator.Struct(cfg); err != nil {
 		return nil, err
 	}
