@@ -54,10 +54,14 @@ type (
 		// port 20 is used for data transfer by default in active mode.
 		Port int `koanf:"port" validate:"required,min=1,max=65535"`
 
+		// Host to listen on
 		Host string `koanf:"host" validate:"required"`
 
 		// Lower bound of ports exposed for passive mode default 50000-50100
 		PassivePortRange string `koanf:"passive_port_range" validate:"omitempty,port_range"`
+
+		// The common name for the self signed certificate
+		CertCommonName string `koanf:"cert_common_name" validate:"omitempty"`
 	}
 
 	// Cluster specific configuration

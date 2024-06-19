@@ -9,27 +9,27 @@ import (
 	"go.uber.org/zap"
 )
 
-
 type FtpServerDriver struct {
-	settings *ftpserver.Settings
-	tlsConfig *tls.Config
+	clientFactory *FtpClientDriverFactory
+	settings      *ftpserver.Settings
+	tlsConfig     *tls.Config
 }
 
-func NewFtpServerDriver(c *config.Config) (*FtpServerDriver, error) {
-	cert, err := getSelfSignedCert()
+func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory) (*FtpServerDriver, error) {
+	cert, err := getSelfSignedCert(c)
 	if err != nil {
 		return nil, err
 	}
-	
 
 	return &FtpServerDriver{
+		clientFactory: cf,
 		tlsConfig: &tls.Config{
 			Certificates: []tls.Certificate{
 				cert,
 			},
-			
+
 			InsecureSkipVerify: true,
-			ClientAuth: tls.NoClientCert,
+			ClientAuth:         tls.NoClientCert,
 		},
 		settings: &ftpserver.Settings{
 			// Feature toggles we want to keep enabled
@@ -41,44 +41,41 @@ func NewFtpServerDriver(c *config.Config) (*FtpServerDriver, error) {
 			ListenAddr: fmt.Sprintf("%s:%d", c.FtpServer.Host, c.FtpServer.Port),
 			PassiveTransferPortRange: &ftpserver.PortRange{
 				Start: 50000,
-				End: 50100,
+				End:   50100,
 			},
 
-
-			//
+			// Disable active mode
 			DisableActiveMode: true,
 
-
 			// Aim to be as open as possible
-			TLSRequired: ftpserver.ClearOrEncrypted,
+			TLSRequired:            ftpserver.ClearOrEncrypted,
 			ActiveConnectionsCheck: ftpserver.IPMatchDisabled,
-			PasvConnectionsCheck: ftpserver.IPMatchDisabled,
+			PasvConnectionsCheck:   ftpserver.IPMatchDisabled,
 		},
 	}, nil
 }
 
-
 func (f *FtpServerDriver) GetSettings() (*ftpserver.Settings, error) {
-	zap.L().Sugar().Info("__STUB__ GetSettings")
+	zap.L().Sugar().Info("__STUB__  FtpServerDriver.GetSettings")
 	return f.settings, nil
 }
 
 func (f *FtpServerDriver) ClientConnected(cc ftpserver.ClientContext) (string, error) {
-	zap.L().Sugar().Info("__STUB__ ClientConnected", cc)
+	zap.L().Sugar().Info("__STUB__  FtpServerDriver.ClientConnected", cc)
 	return "Welcome to the FTP Server", nil
 }
 
 func (f *FtpServerDriver) ClientDisconnected(cc ftpserver.ClientContext) {
-	zap.L().Sugar().Info("__STUB__ ClientDisconnected", cc)
+	zap.L().Sugar().Info("__STUB__  FtpServerDriver.ClientDisconnected", cc)
 	return
 }
 
 func (f *FtpServerDriver) AuthUser(cc ftpserver.ClientContext, user, pass string) (ftpserver.ClientDriver, error) {
-	zap.L().Sugar().Info("__STUB__ AuthUser", cc, user, pass)
-	return &FtpClientDriver{}, nil
+	zap.L().Sugar().Info("__STUB__  FtpServerDriver.AuthUser", cc, user, pass)
+	return f.clientFactory.FromContext(cc), nil
 }
 
 func (f *FtpServerDriver) GetTLSConfig() (*tls.Config, error) {
-	zap.L().Sugar().Info("__STUB__ GetTLSConfig")
+	zap.L().Sugar().Info("__STUB__  FtpServerDriver.GetTLSConfig")
 	return f.tlsConfig, nil
 }

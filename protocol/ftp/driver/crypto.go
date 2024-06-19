@@ -10,29 +10,33 @@ import (
 	"fmt"
 	"math/big"
 	"time"
+
+	"github.com/ryanolee/ryan-pot/config"
 )
-func getSelfSignedCert() (tls.Certificate, error) {
+
+// Generates Self Signed Certificate in memory in the event that a certificate is not provided
+func getSelfSignedCert(c *config.Config) (tls.Certificate, error) {
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		fmt.Println("Failed to generate key")
 		return tls.Certificate{}, err
 	}
-	
 
 	certTemplate := &x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
-			Organization: []string{"ryan-pot"},
+			Organization: []string{"legally distinct goofenshmirtz evil inc"},
+			CommonName:   c.FtpServer.CertCommonName,
 		},
-		NotBefore: time.Now(),
-		NotAfter: time.Now().AddDate(1, 0, 0),
-		KeyUsage: x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(1, 0, 0),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
-		IsCA: true,
+		IsCA:                  true,
 	}
-		
-	x509Cert, err := x509.CreateCertificate(rand.Reader, certTemplate, certTemplate, key.Public(), key);
+
+	x509Cert, err := x509.CreateCertificate(rand.Reader, certTemplate, certTemplate, key.Public(), key)
 
 	pemCert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: x509Cert})
 	pemKey := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})

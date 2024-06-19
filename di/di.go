@@ -22,6 +22,7 @@ import (
 	httpStall "github.com/ryanolee/ryan-pot/protocol/http/stall"
 	"github.com/ryanolee/ryan-pot/secrets"
 	"go.uber.org/fx"
+
 	//"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
 )
@@ -48,17 +49,16 @@ func CreateContainer(conf *config.Config) *fx.App {
 			httpStall.NewHttpStallerFactory,
 
 			// Cluster Memberlist
-			fx.Annotate(handler.NewBroadcastActionHandler, 
+			fx.Annotate(handler.NewBroadcastActionHandler,
 				fx.As(new(handler.IBroadcastActionHandler)),
 			),
-			
 
 			fx.Annotate(
 				gossip.NewMemberList,
 				fx.As(new(action.IBroadcastActionDispatcher)),
-				fx.As(new(gossip.IMemberlist)),	
+				fx.As(new(gossip.IMemberlist)),
 			),
-			
+
 			// Http Server
 			http.NewServer,
 			fx.Annotate(
@@ -69,23 +69,24 @@ func CreateContainer(conf *config.Config) *fx.App {
 			// Ftp Server
 			ftp.NewServer,
 			driver.NewFtpServerDriver,
+			driver.NewFtpClientDriverFactory,
 		),
 		// Resolve circular dependencies
 		fx.Invoke(func(config *config.Config, watcher *metrics.TimeoutWatcher, dispatcher action.IBroadcastActionDispatcher) {
-			if(config.Cluster.Enabled && config.TimeoutWatcher.Enabled) {
+			if config.Cluster.Enabled && config.TimeoutWatcher.Enabled {
 				watcher.SetActionDispatcher(dispatcher)
 			}
 		}),
 
 		// Shutdown hook
-		fx.Invoke(func(shutdown fx.Shutdowner){
+		fx.Invoke(func(shutdown fx.Shutdowner) {
 			go func() {
 				shutdownChannel := make(chan os.Signal, 1)
-		
+
 				signal.Notify(shutdownChannel, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
-		
+
 				<-shutdownChannel
-				
+
 				shutdown.Shutdown()
 				time.Sleep(time.Second * 30)
 				os.Exit(0)
@@ -94,19 +95,19 @@ func CreateContainer(conf *config.Config) *fx.App {
 
 		// Start HTTP server
 		fx.Invoke(func(c *config.Config, s *http.Server) {
-			if(!conf.Server.Enabled) {
+			if !conf.Server.Enabled {
 				zap.L().Info("Http is disabled")
 			}
-			zap.L().Info("Starting Http server", zap.Int("port", s.ListenPort),  zap.String("host", s.ListenHost))
+			zap.L().Info("Starting Http server", zap.Int("port", s.ListenPort), zap.String("host", s.ListenHost))
 			go s.Start()
 		}),
 
 		// Start Ftp server
 		fx.Invoke(func(c *config.Config, s *ftpserver.FtpServer) {
-			if(!conf.FtpServer.Enabled) {
+			if !conf.FtpServer.Enabled {
 				zap.L().Info("Ftp is disabled")
 			}
-			zap.L().Info("Starting Ftp server", zap.Int("port", c.FtpServer.Port),  zap.String("host", c.FtpServer.Host))
+			zap.L().Info("Starting Ftp server", zap.Int("port", c.FtpServer.Port), zap.String("host", c.FtpServer.Host))
 			go s.ListenAndServe()
 		}),
 

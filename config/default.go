@@ -5,7 +5,7 @@ import "go.uber.org/zap/zapcore"
 // Default configuration values for the application
 var defaultConfig = Config{
 	Server: serverConfig{
-		Enabled: 	    true,
+		Enabled:        true,
 		Port:           8080,
 		Host:           "127.0.0.1",
 		Network:        "tcp4",
@@ -13,10 +13,11 @@ var defaultConfig = Config{
 		TrustedProxies: []string{},
 	},
 	FtpServer: ftpServerConfig{
-		Enabled: true,
-		Port: 2121,
-		Host: "0.0.0.0",
+		Enabled:          true,
+		Port:             2121,
+		Host:             "0.0.0.0",
 		PassivePortRange: "50000-50100",
+		CertCommonName:   "",
 	},
 	Logging: loggingConfig{
 		Level: zapcore.InfoLevel.String(),

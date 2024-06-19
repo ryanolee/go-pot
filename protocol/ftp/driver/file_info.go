@@ -1,18 +1,27 @@
 package driver
 
 import (
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
 )
 
 type FtpFileInfo struct {
+	path string
+}
+
+func NewFtpFileInfo(path string) *FtpFileInfo {
+	return &FtpFileInfo{
+		path: path,
+	}
 }
 
 func (f *FtpFileInfo) Name() string {
 	zap.L().Sugar().Info("__STUB__ Name")
-	return "FtpFileInfo"
+	return f.path
 }
 
 func (f *FtpFileInfo) Size() int64 {
@@ -32,11 +41,11 @@ func (f *FtpFileInfo) ModTime() time.Time {
 
 func (f *FtpFileInfo) IsDir() bool {
 	zap.L().Sugar().Info("__STUB__ IsDir")
-	return false
+	fmt.Println(strings.HasSuffix(f.path, "/"))
+	return strings.HasSuffix(f.path, "/")
 }
 
 func (f *FtpFileInfo) Sys() any {
 	zap.L().Sugar().Info("__STUB__ Sys")
 	return nil
 }
-
