@@ -7,14 +7,15 @@ import (
 	"github.com/ryanolee/ryan-pot/config"
 	"github.com/ryanolee/ryan-pot/generator"
 	"github.com/ryanolee/ryan-pot/generator/encoder"
-	"github.com/ryanolee/ryan-pot/http/metrics"
+	"github.com/ryanolee/ryan-pot/core/metrics"
+	"github.com/ryanolee/ryan-pot/core/stall"
 	"github.com/ryanolee/ryan-pot/secrets"
 	"go.uber.org/zap"
 )
 
 type HttpStallerFactory struct {
 	// Services
-	pool *HttpStallerPool
+	pool *stall.StallerPool
 	telemetry *metrics.Telemetry
 	timeoutWatcher *metrics.TimeoutWatcher
 	secretsGenerators *secrets.SecretGeneratorCollection
@@ -26,7 +27,7 @@ type HttpStallerFactory struct {
 
 func NewHttpStallerFactory(
 	config *config.Config,
-	pool *HttpStallerPool,
+	pool *stall.StallerPool,
 	timeoutWatcher *metrics.TimeoutWatcher,
 	telemetry *metrics.Telemetry,
 	secretsGeneratorCollection *secrets.SecretGeneratorCollection,

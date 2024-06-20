@@ -12,23 +12,23 @@ import (
 )
 
 type (
-	HttpStallerPool struct {
+	StallerPool struct {
 		// Map of connection ID's to map to HttpStaller
 		stallers           *StallerCollection
-		deregisterChan     chan *HttpStaller
+		deregisterChan     chan Staller
 		stopChan           chan bool
 		maximumConnections int
 		registrationMutex  sync.Mutex
 	}
 
-	HttpStallerPoolOptions struct {
+	StallerPoolOptions struct {
 		MaximumConnections     int
 	}
 )
 
-func NewHttpStallerPool(lifecycle fx.Lifecycle, config *config.Config) *HttpStallerPool {
-	pool := &HttpStallerPool{
-		deregisterChan:     make(chan *HttpStaller, config.Staller.MaximumConnections),
+func NewStallerPool(lifecycle fx.Lifecycle, config *config.Config) *StallerPool {
+	pool := &StallerPool{
+		deregisterChan:     make(chan Staller, config.Staller.MaximumConnections),
 		stopChan:           make(chan bool),
 		stallers:           NewStallerCollection(),
 		maximumConnections: config.Staller.MaximumConnections,
@@ -48,14 +48,14 @@ func NewHttpStallerPool(lifecycle fx.Lifecycle, config *config.Config) *HttpStal
 	return pool
 }
 
-func (s *HttpStallerPool) Register(staller *HttpStaller) error {
+func (s *StallerPool) Register(staller Staller) error {
 	if s.stallers.Len() >= s.maximumConnections {
 		zap.L().Sugar().Warnw("maximum connections reached, cannot register staller")
 		return fmt.Errorf("maximum connections reached, cannot register staller")
 	}
 
 	// Bind pool to staller
-	staller.BindPool(s.deregisterChan)
+	staller.BindToPool(s.deregisterChan)
 
 	// Lock Registration
 	s.registrationMutex.Lock()
@@ -68,7 +68,7 @@ func (s *HttpStallerPool) Register(staller *HttpStaller) error {
 
 }
 
-func (s *HttpStallerPool) Start() {
+func (s *StallerPool) Start() {
 	// Deregistration watcher
 	go func() {
 		for {
@@ -94,11 +94,11 @@ func (s *HttpStallerPool) Start() {
 	}()
 }
 
-func (s *HttpStallerPool) Stop() {
+func (s *StallerPool) Stop() {
 	zap.L().Sugar().Warnw("Stopping staller pool")
 	for _, ipMap := range s.stallers.stallers {
 		for _, staller := range ipMap {
-			zap.L().Sugar().Warnw("Closing staller", "ipAddress", staller.ipAddress, "id", staller.id, "duration", staller.GetElapsedTime())
+			zap.L().Sugar().Warnw("Closing staller", "group", staller.GetGroupIdentifier(), "id", staller.GetGroupIdentifier())
 			staller.Close()
 		}
 	}
@@ -110,7 +110,7 @@ func (s *HttpStallerPool) Stop() {
 	zap.L().Sugar().Warnw("Stopped staller pool")
 }
 
-func (s *HttpStallerPool) Prune() {
+func (s *StallerPool) Prune() {
 	target := int(float64(s.maximumConnections) * 0.9)
 	length := s.stallers.Len()
 

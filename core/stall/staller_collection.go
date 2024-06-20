@@ -8,38 +8,38 @@ import (
 
 // Structured map for stallers mapped by ipAddress and Connection ID
 type StallerCollection struct {
-	stallers map[string]map[uint64]*HttpStaller
+	stallers map[string]map[uint64]Staller
 	lock     sync.Mutex
 }
 
 func NewStallerCollection() *StallerCollection {
 	return &StallerCollection{
-		stallers: make(map[string]map[uint64]*HttpStaller),
+		stallers: make(map[string]map[uint64]Staller),
 	}
 }
 
-func (c *StallerCollection) Add(staller *HttpStaller) {
+func (c *StallerCollection) Add(staller Staller) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if _, ok := c.stallers[staller.ipAddress]; !ok {
-		c.stallers[staller.ipAddress] = make(map[uint64]*HttpStaller)
+	if _, ok := c.stallers[staller.GetGroupIdentifier()]; !ok {
+		c.stallers[staller.GetGroupIdentifier()] = make(map[uint64]Staller)
 	}
 
-	c.stallers[staller.ipAddress][staller.id] = staller
+	c.stallers[staller.GetGroupIdentifier()][staller.GetIdentifier()] = staller
 }
 
-func (c *StallerCollection) Delete(staller *HttpStaller) {
-	zap.L().Sugar().Debugw("Deleting staller", "ipAddress", staller.ipAddress, "id", staller.id, "duration", staller.GetElapsedTime())
+func (c *StallerCollection) Delete(staller Staller) {
+	zap.L().Sugar().Debugw("Deleting staller", "groupId", staller.GetIdentifier(), "id", staller.GetIdentifier())
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if ipMap, ok := c.stallers[staller.ipAddress]; ok {
-		delete(ipMap, staller.id)
+	if ipMap, ok := c.stallers[staller.GetGroupIdentifier()]; ok {
+		delete(ipMap, staller.GetIdentifier())
 	}
 
-	if len(c.stallers[staller.ipAddress]) == 0 {
-		delete(c.stallers, staller.ipAddress)
+	if len(c.stallers[staller.GetGroupIdentifier()]) == 0 {
+		delete(c.stallers, staller.GetGroupIdentifier())
 	}
 }
 
@@ -67,8 +67,8 @@ func (c *StallerCollection) PruneByIp() {
 	}
 }
 
-func (c *StallerCollection) getMostActiveStallers() map[uint64]*HttpStaller {
-	var mostActiveStallers map[uint64]*HttpStaller
+func (c *StallerCollection) getMostActiveStallers() map[uint64]Staller {
+	var mostActiveStallers map[uint64]Staller
 	for _, ipMap := range c.stallers {
 		if len(ipMap) > len(mostActiveStallers) {
 			mostActiveStallers = ipMap

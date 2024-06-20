@@ -1,6 +1,7 @@
 package rand
 
 import (
+	"hash/crc64"
 	"math/rand"
 	"time"
 
@@ -19,12 +20,11 @@ type SeededRand struct {
 	Rand   *rand.Rand
 }
 
+var crc64Table = crc64.MakeTable(crc64.ISO)
+
 func NewSeededRandFromString(stringSeed string) *SeededRand {
-	seed := int64(0)
-	for i, c := range stringSeed {
-		seed += int64(c) * int64(i+1)
-	}
-	return NewSeededRand(seed)
+	hash := crc64.Checksum([]byte(stringSeed), crc64Table)
+	return NewSeededRand(int64(hash))
 }
 
 func NewSeededRandFromTime() *SeededRand {
@@ -38,6 +38,11 @@ func NewSeededRand(seed int64) *SeededRand {
 		Source: source,
 		Rand:   r,
 	}
+}
+
+// Getters and setters
+func (sr *SeededRand) SetSource(source rand.Source) {
+	sr.Rand = rand.New(source)
 }
 
 // Generic functions
