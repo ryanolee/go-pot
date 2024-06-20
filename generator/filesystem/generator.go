@@ -24,6 +24,11 @@ var fileExtensions = []string{
 const (
 	minFilesInDir = 5
 	maxFilesInDir = 10
+
+	minDirsInDir = 2
+	maxDirsInDir = 5
+
+	DirSuffix = "dir"
 )
 
 // Semi stable filesystem generator used to generate random filesystem metadata
@@ -33,13 +38,11 @@ type (
 		rand rand.SeededRand
 	}
 
-	FilesystemDirectory struct {
-		Name string
-	}
 
-	FilesystemFile struct {
+	FilesystemEntry struct {
 		Size int64
 		Name string
+		IsDir bool
 	}
 )
 
@@ -64,36 +67,46 @@ func (fg *FilesystemGenerator) ResetWithOffset(offset int64) {
 }
 
 // Generate a random directory
-func (fg *FilesystemGenerator) GenerateFile(timeToDownload time.Duration) *FilesystemFile {
+func (fg *FilesystemGenerator) GenerateFile(timeToDownload time.Duration) *FilesystemEntry {
 
 	fileSize := timeToDownload.Milliseconds()
 	fileName := fg.rand.RandomString(20, rand.AlphabetLower)
 	fileExt := fg.rand.StringChoice(&fileExtensions)
 
-	return &FilesystemFile{
+	return &FilesystemEntry{
 		Name: fmt.Sprintf("%s.%s", fileName, fileExt),
 		Size: fileSize,
+		IsDir: false,
 	}
 }
 
-func (fg *FilesystemGenerator) GenerateFiles(timeToDownload time.Duration) []*FilesystemFile {
-	numToGenerate := fg.rand.RandomInt(minFilesInDir, maxFilesInDir)
-	files := make([]*FilesystemFile, numToGenerate)
+func (fg *FilesystemGenerator) Generate(timeToDownload time.Duration) []*FilesystemEntry {
+	filesToGenerate := fg.rand.RandomInt(minFilesInDir, maxFilesInDir)
+	dirsToGenerate := fg.rand.RandomInt(minDirsInDir, maxDirsInDir)
 
-	for i, _ := range files {
-		files[i] = fg.GenerateFile(timeToDownload)
+	files := make([]*FilesystemEntry, 0)
+
+	for i := 0; i < filesToGenerate; i++ {
+		files = append(files, fg.GenerateFile(timeToDownload))
+	}
+
+	for i := 0; i < dirsToGenerate; i++ {
+		files = append(files, fg.GenerateDirectory())
 	}
 
 	return files
 }
 
+func (fg *FilesystemGenerator) GenerateDirectory() *FilesystemEntry {
+	return &FilesystemEntry{
+		Name: fg.rand.RandomString(10, rand.AlphabetLower) + DirSuffix + "/",
+	}
+}
+
+
+
 // Filesystem file stringer methods
-
-func (ff *FilesystemFile) String() string {
-	return fmt.Sprintf("File: %s, Size: %d", ff.Name, ff.Size)
+func (fe *FilesystemEntry) String() string {
+	return fmt.Sprintf("File: %s, Size: %d, IsDir: %t", fe.Name, fe.Size, fe.IsDir)
 }
 
-// FilesystemDirectory
-func (fd *FilesystemDirectory) String() string {
-	return fmt.Sprintf("Directory: %s", fd.Name)
-}

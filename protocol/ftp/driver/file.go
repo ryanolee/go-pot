@@ -64,7 +64,7 @@ func (f *FtpFile) Readdir(count int) ([]os.FileInfo, error) {
 	zap.L().Sugar().Info("__STUB__  FtpFile.Readdir", count)
 
 	f.resetGenerator()
-	files := f.gen.GenerateFiles(1000)
+	files := f.gen.Generate(1000)
 	fileInfo := make([]os.FileInfo, 0)
 	for _, file := range files {
 		fileInfo = append(fileInfo, NewFtpFileInfo(file.Name))

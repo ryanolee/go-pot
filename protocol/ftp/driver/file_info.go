@@ -3,14 +3,25 @@ package driver
 import (
 	"fmt"
 	"os"
-	"strings"
+	"regexp"
 	"time"
 
+	"github.com/ryanolee/ryan-pot/generator/filesystem"
 	"go.uber.org/zap"
 )
 
+var isDirRegexp = regexp.MustCompile(fmt.Sprintf(`(%s\/?|\/)$`, filesystem.DirSuffix))
+
 type FtpFileInfo struct {
 	path string
+	isDir bool
+}
+
+func NewFtpFileInfoFromFsEntry(entry *filesystem.FilesystemEntry) *FtpFileInfo {
+	return &FtpFileInfo{
+		path: entry.Name,
+		isDir: entry.IsDir,
+	}
 }
 
 func NewFtpFileInfo(path string) *FtpFileInfo {
@@ -41,8 +52,9 @@ func (f *FtpFileInfo) ModTime() time.Time {
 
 func (f *FtpFileInfo) IsDir() bool {
 	zap.L().Sugar().Info("__STUB__ IsDir")
-	fmt.Println(strings.HasSuffix(f.path, "/"))
-	return strings.HasSuffix(f.path, "/")
+	fmt.Println(f.path)
+	return f.isDir || 
+		isDirRegexp.MatchString(f.path)
 }
 
 func (f *FtpFileInfo) Sys() any {
