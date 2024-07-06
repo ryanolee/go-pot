@@ -52,7 +52,6 @@ func (f *FtpFileInfo) ModTime() time.Time {
 
 func (f *FtpFileInfo) IsDir() bool {
 	zap.L().Sugar().Info("__STUB__ IsDir")
-	fmt.Println(f.path)
 	return f.isDir || 
 		isDirRegexp.MatchString(f.path)
 }

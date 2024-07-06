@@ -5,10 +5,10 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/generator"
-	"github.com/ryanolee/ryan-pot/generator/encoder"
 	"github.com/ryanolee/ryan-pot/core/metrics"
 	"github.com/ryanolee/ryan-pot/core/stall"
+	"github.com/ryanolee/ryan-pot/generator"
+	"github.com/ryanolee/ryan-pot/generator/encoder"
 	"github.com/ryanolee/ryan-pot/secrets"
 	"go.uber.org/zap"
 )
@@ -48,19 +48,20 @@ func (f *HttpStallerFactory) FromFiberContext(c *fiber.Ctx) (*HttpStaller, error
 	encoder := encoder.GetEncoderForPath(c.Path())
 	gen := getGeneratorForEncoder(encoder, f.configGenerators, f.secretsGenerators)
 	ip := c.IP()
+	identifier := "http-" + ip
 	opts := &HttpStallerOptions{
 		Request: c,
 		Generator: gen,
 		TransferRate: time.Second / time.Duration(f.bytesPerSecond),
-		Timeout: f.timeoutWatcher.GetTimeout(ip),
+		Timeout: f.timeoutWatcher.GetTimeout(identifier),
 		ContentType: encoder.ContentType(),
 		OnTimeout: func(stl *HttpStaller) {
 			zap.L().Sugar().Infow("Timeout", "ip", ip, "duration", stl.GetElapsedTime())
-			f.timeoutWatcher.RecordResponse(ip, stl.GetElapsedTime(), false)
+			f.timeoutWatcher.RecordResponse(identifier, stl.GetElapsedTime(), false)
 		},
 		OnClose: func(stl *HttpStaller) {
 			zap.L().Sugar().Infow("Timeout", "ip", ip, "duration", stl.GetElapsedTime())
-			f.timeoutWatcher.RecordResponse(ip, stl.GetElapsedTime(), true)
+			f.timeoutWatcher.RecordResponse(identifier, stl.GetElapsedTime(), true)
 		},
 		Telemetry: f.telemetry,
 	}
