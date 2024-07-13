@@ -2,7 +2,6 @@ package filesystem
 
 import (
 	"fmt"
-	"time"
 
 	mRand "math/rand"
 
@@ -38,13 +37,14 @@ type (
 		rand rand.SeededRand
 	}
 
-
 	FilesystemEntry struct {
-		Size int64
-		Name string
+		Size  int64
+		Name  string
 		IsDir bool
 	}
 )
+
+const FileSize = 1024 * 1024 // 1MB
 
 // Note that this is not thread safe. Each seeded rand needs to be set per client
 func NewFilesystemGenerator(seed int64) *FilesystemGenerator {
@@ -67,27 +67,26 @@ func (fg *FilesystemGenerator) ResetWithOffset(offset int64) {
 }
 
 // Generate a random directory
-func (fg *FilesystemGenerator) GenerateFile(timeToDownload time.Duration) *FilesystemEntry {
+func (fg *FilesystemGenerator) GenerateFile() *FilesystemEntry {
 
-	fileSize := timeToDownload.Milliseconds()
 	fileName := fg.rand.RandomString(20, rand.AlphabetLower)
 	fileExt := fg.rand.StringChoice(&fileExtensions)
 
 	return &FilesystemEntry{
-		Name: fmt.Sprintf("%s.%s", fileName, fileExt),
-		Size: fileSize,
+		Name:  fmt.Sprintf("%s.%s", fileName, fileExt),
+		Size:  FileSize,
 		IsDir: false,
 	}
 }
 
-func (fg *FilesystemGenerator) Generate(timeToDownload time.Duration) []*FilesystemEntry {
+func (fg *FilesystemGenerator) Generate() []*FilesystemEntry {
 	filesToGenerate := fg.rand.RandomInt(minFilesInDir, maxFilesInDir)
 	dirsToGenerate := fg.rand.RandomInt(minDirsInDir, maxDirsInDir)
 
 	files := make([]*FilesystemEntry, 0)
 
 	for i := 0; i < filesToGenerate; i++ {
-		files = append(files, fg.GenerateFile(timeToDownload))
+		files = append(files, fg.GenerateFile())
 	}
 
 	for i := 0; i < dirsToGenerate; i++ {
@@ -103,10 +102,7 @@ func (fg *FilesystemGenerator) GenerateDirectory() *FilesystemEntry {
 	}
 }
 
-
-
 // Filesystem file stringer methods
 func (fe *FilesystemEntry) String() string {
 	return fmt.Sprintf("File: %s, Size: %d, IsDir: %t", fe.Name, fe.Size, fe.IsDir)
 }
-

@@ -17,6 +17,7 @@ import (
 	"github.com/ryanolee/ryan-pot/generator"
 	"github.com/ryanolee/ryan-pot/protocol/ftp"
 	"github.com/ryanolee/ryan-pot/protocol/ftp/driver"
+	"github.com/ryanolee/ryan-pot/protocol/ftp/throttle"
 	"github.com/ryanolee/ryan-pot/protocol/http"
 	httpLogger "github.com/ryanolee/ryan-pot/protocol/http/logging"
 	httpStall "github.com/ryanolee/ryan-pot/protocol/http/stall"
@@ -65,6 +66,9 @@ func CreateContainer(conf *config.Config) *fx.App {
 				httpLogger.NewServerLogger,
 				fx.As(new(httpLogger.IServerLogger)),
 			),
+
+			// Ftp Support
+			throttle.NewFtpThrottle,
 
 			// Ftp Server
 			ftp.NewServer,

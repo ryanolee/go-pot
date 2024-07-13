@@ -1,3 +1,0 @@
-package stall
-
-func package 

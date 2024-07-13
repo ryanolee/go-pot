@@ -13,13 +13,16 @@ import (
 var isDirRegexp = regexp.MustCompile(fmt.Sprintf(`(%s\/?|\/)$`, filesystem.DirSuffix))
 
 type FtpFileInfo struct {
-	path string
+	path  string
 	isDir bool
 }
 
+// FTP Metadata relating to a file
+// FTP Sever Driver --> FTP Client Driver --> FTP File, [FTP File Info]
+
 func NewFtpFileInfoFromFsEntry(entry *filesystem.FilesystemEntry) *FtpFileInfo {
 	return &FtpFileInfo{
-		path: entry.Name,
+		path:  entry.Name,
 		isDir: entry.IsDir,
 	}
 }
@@ -37,7 +40,7 @@ func (f *FtpFileInfo) Name() string {
 
 func (f *FtpFileInfo) Size() int64 {
 	zap.L().Sugar().Info("__STUB__ Size")
-	return 0
+	return fileSize
 }
 
 func (f *FtpFileInfo) Mode() os.FileMode {
@@ -52,7 +55,7 @@ func (f *FtpFileInfo) ModTime() time.Time {
 
 func (f *FtpFileInfo) IsDir() bool {
 	zap.L().Sugar().Info("__STUB__ IsDir")
-	return f.isDir || 
+	return f.isDir ||
 		isDirRegexp.MatchString(f.path)
 }
 

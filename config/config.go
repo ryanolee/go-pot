@@ -62,6 +62,9 @@ type (
 
 		// The common name for the self signed certificate
 		CertCommonName string `koanf:"cert_common_name" validate:"omitempty"`
+
+		// If commands send to the FTP server should be stalled
+		StallCommands bool `koanf:"stall_commands"`
 	}
 
 	// Cluster specific configuration

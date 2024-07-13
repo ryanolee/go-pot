@@ -6,16 +6,21 @@ import (
 
 	ftpserver "github.com/fclairamb/ftpserverlib"
 	"github.com/ryanolee/ryan-pot/config"
+	"github.com/ryanolee/ryan-pot/protocol/ftp/throttle"
 	"go.uber.org/zap"
 )
+
+// FTP Server handles top level FTP Sever Connections
+// [FTP Sever Driver] --> FTP Client Driver --> FTP File, FTP File Info
 
 type FtpServerDriver struct {
 	clientFactory *FtpClientDriverFactory
 	settings      *ftpserver.Settings
 	tlsConfig     *tls.Config
+	throttle      *throttle.FtpThrottle
 }
 
-func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory) (*FtpServerDriver, error) {
+func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory, throttle *throttle.FtpThrottle) (*FtpServerDriver, error) {
 	cert, err := getSelfSignedCert(c)
 	if err != nil {
 		return nil, err
@@ -23,6 +28,7 @@ func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory) (*FtpServe
 
 	return &FtpServerDriver{
 		clientFactory: cf,
+		throttle:      throttle,
 		tlsConfig: &tls.Config{
 			Certificates: []tls.Certificate{
 				cert,
@@ -67,6 +73,8 @@ func (f *FtpServerDriver) ClientConnected(cc ftpserver.ClientContext) (string, e
 
 func (f *FtpServerDriver) ClientDisconnected(cc ftpserver.ClientContext) {
 	zap.L().Sugar().Info("__STUB__  FtpServerDriver.ClientDisconnected", cc)
+	clientId := f.clientFactory.GetClientIdFromContent(cc)
+	f.throttle.Unregister(clientId)
 	return
 }
 

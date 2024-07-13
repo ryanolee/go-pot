@@ -18,6 +18,7 @@ var defaultConfig = Config{
 		Host:             "0.0.0.0",
 		PassivePortRange: "50000-50100",
 		CertCommonName:   "",
+		StallCommands:    false,
 	},
 	Logging: loggingConfig{
 		Level: zapcore.InfoLevel.String(),
