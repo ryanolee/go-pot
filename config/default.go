@@ -23,8 +23,8 @@ var defaultConfig = Config{
 			MaxPendingOperations: 10,
 		},
 		Transfer: ftpTransferConfig{
-			ChunkSize:     8,
-			ChunkSendRate: 500,
+			ChunkSize:     1,
+			ChunkSendRate: 1000,
 			FileSize:      1024 * 1024 * 20, // 1Mb
 		},
 	},
