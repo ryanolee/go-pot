@@ -1,8 +1,25 @@
 package generator
-type Generator interface{
+
+import (
+	"github.com/ryanolee/ryan-pot/generator/encoder"
+	"github.com/ryanolee/ryan-pot/secrets"
+)
+
+type Generator interface {
 	Start() []byte
 	Generate() []byte
 	GenerateChunk() []byte
 	ChunkSeparator() []byte
 	End() []byte
+}
+
+func GetGeneratorForEncoder(encoder encoder.Encoder, configGenerators *ConfigGeneratorCollection, secretsGenerators *secrets.SecretGeneratorCollection) Generator {
+	switch encoder.GetSupportedGenerator() {
+	case "config":
+		return NewConfigGenerator(encoder, configGenerators, secretsGenerators)
+	case "tabular":
+		return NewTabularGenerator(encoder)
+	default:
+		return nil
+	}
 }

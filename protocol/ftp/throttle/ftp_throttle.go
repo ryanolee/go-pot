@@ -3,13 +3,11 @@ package throttle
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/ryanolee/ryan-pot/config"
 	"go.uber.org/fx"
-	"go.uber.org/zap"
 )
 
 type FtpThrottle struct {
@@ -34,10 +32,11 @@ func NewFtpThrottle(lf fx.Lifecycle, cfg *config.Config) *FtpThrottle {
 	}
 
 	throttle := &FtpThrottle{
+		closeChannel:         make(chan bool),
 		operationMap:         make(map[int64]*sync.Mutex),
 		waitChannels:         make(map[int64][]chan bool),
-		maxPendingOperations: 10,
-		waitTime:             time.Second * 1,
+		maxPendingOperations: cfg.FtpServer.Throttle.MaxPendingOperations,
+		waitTime:             time.Millisecond * time.Duration(cfg.FtpServer.Throttle.WaitTime),
 	}
 
 	lf.Append(fx.Hook{
@@ -80,8 +79,6 @@ func (t *FtpThrottle) ReleaseAll(id int64) {
 }
 
 func (t *FtpThrottle) ReleasePendingProcess(id int64) {
-	fmt.Println("RELEASE One from", id)
-
 	lock := t.getLock(id)
 	lock.Lock()
 	defer lock.Unlock()
@@ -96,12 +93,9 @@ func (t *FtpThrottle) ReleasePendingProcess(id int64) {
 	}
 
 	// Release the first pending operation
-	fmt.Println("RELEASEING One from", id)
 	waitChannel := t.waitChannels[id][0]
 	waitChannel <- true
 	close(waitChannel)
-
-	fmt.Println("Released One from", id)
 
 	// Remove the released operation from the list
 	t.waitChannels[id] = t.waitChannels[id][1:]
@@ -123,7 +117,6 @@ func (t *FtpThrottle) Start() {
 
 // Register a new client and returns a channel to close all pending operations with
 func (t *FtpThrottle) Throttle(id int64) (chan bool, error) {
-	zap.L().Sugar().Info("Throttling Call ftp client id", id)
 	lock := t.getLock(id)
 	lock.Lock()
 	defer lock.Unlock()

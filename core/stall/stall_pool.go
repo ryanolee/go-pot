@@ -22,7 +22,7 @@ type (
 	}
 
 	StallerPoolOptions struct {
-		MaximumConnections     int
+		MaximumConnections int
 	}
 )
 
@@ -30,7 +30,7 @@ func NewStallerPool(lifecycle fx.Lifecycle, config *config.Config) *StallerPool 
 	pool := &StallerPool{
 		deregisterChan:     make(chan Staller, config.Staller.MaximumConnections),
 		stopChan:           make(chan bool),
-		stallers:           NewStallerCollection(),
+		stallers:           NewStallerCollection(config.Staller.GroupLimit),
 		maximumConnections: config.Staller.MaximumConnections,
 	}
 
@@ -61,8 +61,12 @@ func (s *StallerPool) Register(staller Staller) error {
 	s.registrationMutex.Lock()
 	defer s.registrationMutex.Unlock()
 
-	// Add staller to pool
-	s.stallers.Add(staller)
+	// If we fail to add a staller close it and close it and abort the registation the registration
+	if err := s.stallers.Add(staller); err != nil {
+		staller.Close()
+		zap.L().Error("failed to add staller", zap.Error(err))
+		return err
+	}
 
 	return nil
 
@@ -105,9 +109,13 @@ func (s *StallerPool) Stop() {
 
 	// Sometimes the deregister channel hangs
 	// @todo: Fix this
-	go(func() {s.stopChan <- true})()
-	
+	go (func() { s.stopChan <- true })()
+
 	zap.L().Sugar().Warnw("Stopped staller pool")
+}
+
+func (s *StallerPool) StopByIdentifier(id string) {
+	s.stallers.PruneByIdentifierGroup(id)
 }
 
 func (s *StallerPool) Prune() {
@@ -117,6 +125,6 @@ func (s *StallerPool) Prune() {
 	if length > target {
 		diff := length - target
 		fmt.Println(diff)
-		s.stallers.PruneNByIp(diff)
+		s.stallers.PruneNByIdentifier(diff)
 	}
 }

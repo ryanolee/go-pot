@@ -16,13 +16,16 @@ import (
 	"github.com/ryanolee/ryan-pot/core/stall"
 	"github.com/ryanolee/ryan-pot/generator"
 	"github.com/ryanolee/ryan-pot/protocol/ftp"
+	ftpDi "github.com/ryanolee/ryan-pot/protocol/ftp/di"
 	"github.com/ryanolee/ryan-pot/protocol/ftp/driver"
+	ftpStall "github.com/ryanolee/ryan-pot/protocol/ftp/stall"
 	"github.com/ryanolee/ryan-pot/protocol/ftp/throttle"
 	"github.com/ryanolee/ryan-pot/protocol/http"
 	httpLogger "github.com/ryanolee/ryan-pot/protocol/http/logging"
 	httpStall "github.com/ryanolee/ryan-pot/protocol/http/stall"
 	"github.com/ryanolee/ryan-pot/secrets"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 
 	//"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
@@ -48,6 +51,7 @@ func CreateContainer(conf *config.Config) *fx.App {
 			// Stallers
 			stall.NewStallerPool,
 			httpStall.NewHttpStallerFactory,
+			ftpStall.NewFtpFileStallerFactory,
 
 			// Cluster Memberlist
 			fx.Annotate(handler.NewBroadcastActionHandler,
@@ -74,6 +78,9 @@ func CreateContainer(conf *config.Config) *fx.App {
 			ftp.NewServer,
 			driver.NewFtpServerDriver,
 			driver.NewFtpClientDriverFactory,
+
+			// Di Repositories
+			ftpDi.NewFtpRepository,
 		),
 		// Resolve circular dependencies
 		fx.Invoke(func(config *config.Config, watcher *metrics.TimeoutWatcher, dispatcher action.IBroadcastActionDispatcher) {
@@ -115,8 +122,8 @@ func CreateContainer(conf *config.Config) *fx.App {
 			go s.ListenAndServe()
 		}),
 
-		//fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
-		//	return &fxevent.ZapLogger{Logger: log}
-		//}),
+		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
+			return &fxevent.ZapLogger{Logger: log}
+		}),
 	)
 }

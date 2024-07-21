@@ -1,7 +1,7 @@
 package ftp
 
 import (
-	"github.com/fclairamb/ftpserverlib"
+	ftpserver "github.com/fclairamb/ftpserverlib"
 	"github.com/ryanolee/ryan-pot/protocol/ftp/driver"
 )
 

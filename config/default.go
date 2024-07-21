@@ -18,7 +18,15 @@ var defaultConfig = Config{
 		Host:             "0.0.0.0",
 		PassivePortRange: "50000-50100",
 		CertCommonName:   "",
-		StallCommands:    false,
+		Throttle: ftpThrottleConfig{
+			WaitTime:             1000,
+			MaxPendingOperations: 10,
+		},
+		Transfer: ftpTransferConfig{
+			ChunkSize:     8,
+			ChunkSendRate: 500,
+			FileSize:      1024 * 1024 * 20, // 1Mb
+		},
 	},
 	Logging: loggingConfig{
 		Level: zapcore.InfoLevel.String(),
@@ -85,8 +93,9 @@ var defaultConfig = Config{
 		MaximumRecastIntervalMin: 120,
 		TimeWastedRatio:          0.05,
 	},
-	Staller: httpStallerConfig{
+	Staller: stallerConfig{
 		MaximumConnections: 200,
+		GroupLimit:         1,
 		BytesPerSecond:     8,
 	},
 }

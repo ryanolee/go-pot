@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var isDirRegexp = regexp.MustCompile(fmt.Sprintf(`(%s\/?|\/)$`, filesystem.DirSuffix))
+var isDirRegexp = regexp.MustCompile(fmt.Sprintf(`(%s\/?|\/|\/\-a)$`, filesystem.DirSuffix))
 
 type FtpFileInfo struct {
 	path  string
@@ -34,32 +34,32 @@ func NewFtpFileInfo(path string) *FtpFileInfo {
 }
 
 func (f *FtpFileInfo) Name() string {
-	zap.L().Sugar().Info("__STUB__ Name")
+	zap.L().Sugar().Debug("__STUB__ Name")
 	return f.path
 }
 
 func (f *FtpFileInfo) Size() int64 {
-	zap.L().Sugar().Info("__STUB__ Size")
+	zap.L().Sugar().Debug("__STUB__ Size")
 	return fileSize
 }
 
 func (f *FtpFileInfo) Mode() os.FileMode {
-	zap.L().Sugar().Info("__STUB__ Mode")
+	zap.L().Sugar().Debug("__STUB__ Mode")
 	return 0
 }
 
 func (f *FtpFileInfo) ModTime() time.Time {
-	zap.L().Sugar().Info("__STUB__ ModTime")
+	zap.L().Sugar().Debug("__STUB__ ModTime")
 	return time.Now()
 }
 
 func (f *FtpFileInfo) IsDir() bool {
-	zap.L().Sugar().Info("__STUB__ IsDir")
+	zap.L().Sugar().Debug("__STUB__ IsDir")
 	return f.isDir ||
 		isDirRegexp.MatchString(f.path)
 }
 
 func (f *FtpFileInfo) Sys() any {
-	zap.L().Sugar().Info("__STUB__ Sys")
+	zap.L().Sugar().Debug("__STUB__ Sys")
 	return nil
 }

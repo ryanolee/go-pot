@@ -1,24 +1,28 @@
 package stall
 
 import (
+	"errors"
+	"fmt"
 	"sync"
 
 	"go.uber.org/zap"
 )
 
-// Structured map for stallers mapped by ipAddress and Connection ID
+// Structured map for stallers mapped by identifierAddress and Connection ID
 type StallerCollection struct {
 	stallers map[string]map[uint64]Staller
-	lock     sync.Mutex
+	// The maximum number of stallers allowed per group
+	groupLimit int
+	lock       sync.Mutex
 }
 
-func NewStallerCollection() *StallerCollection {
+func NewStallerCollection(groupLimit int) *StallerCollection {
 	return &StallerCollection{
 		stallers: make(map[string]map[uint64]Staller),
 	}
 }
 
-func (c *StallerCollection) Add(staller Staller) {
+func (c *StallerCollection) Add(staller Staller) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -26,7 +30,12 @@ func (c *StallerCollection) Add(staller Staller) {
 		c.stallers[staller.GetGroupIdentifier()] = make(map[uint64]Staller)
 	}
 
+	if len(c.stallers[staller.GetGroupIdentifier()]) > c.groupLimit {
+		return errors.New(fmt.Sprintf("failed to add id %d to group %s due to group limit %d being reached", staller.GetIdentifier(), staller.GetGroupIdentifier(), c.groupLimit))
+	}
+
 	c.stallers[staller.GetGroupIdentifier()][staller.GetIdentifier()] = staller
+	return nil
 }
 
 func (c *StallerCollection) Delete(staller Staller) {
@@ -34,8 +43,8 @@ func (c *StallerCollection) Delete(staller Staller) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if ipMap, ok := c.stallers[staller.GetGroupIdentifier()]; ok {
-		delete(ipMap, staller.GetIdentifier())
+	if identifierMap, ok := c.stallers[staller.GetGroupIdentifier()]; ok {
+		delete(identifierMap, staller.GetIdentifier())
 	}
 
 	if len(c.stallers[staller.GetGroupIdentifier()]) == 0 {
@@ -43,21 +52,32 @@ func (c *StallerCollection) Delete(staller Staller) {
 	}
 }
 
-func (c *StallerCollection) PruneNByIp(count int) {
+func (c *StallerCollection) PruneNByIdentifier(count int) {
 	for i := 0; i < count; i++ {
-		c.PruneByIp()
+		c.PruneByIdentifier()
 	}
 }
 
 func (c *StallerCollection) Len() int {
 	count := 0
-	for _, ipMap := range c.stallers {
-		count += len(ipMap)
+	for _, identifierMap := range c.stallers {
+		count += len(identifierMap)
 	}
 	return count
 }
 
-func (c *StallerCollection) PruneByIp() {
+func (c *StallerCollection) PruneByIdentifierGroup(id string) {
+	stallers, ok := c.stallers[id]
+	if !ok {
+		return
+	}
+
+	for _, staller := range stallers {
+		c.Delete(staller)
+	}
+}
+
+func (c *StallerCollection) PruneByIdentifier() {
 	stallers := c.getMostActiveStallers()
 
 	for _, staller := range stallers {
@@ -69,9 +89,9 @@ func (c *StallerCollection) PruneByIp() {
 
 func (c *StallerCollection) getMostActiveStallers() map[uint64]Staller {
 	var mostActiveStallers map[uint64]Staller
-	for _, ipMap := range c.stallers {
-		if len(ipMap) > len(mostActiveStallers) {
-			mostActiveStallers = ipMap
+	for _, identifierMap := range c.stallers {
+		if len(identifierMap) > len(mostActiveStallers) {
+			mostActiveStallers = identifierMap
 		}
 	}
 
