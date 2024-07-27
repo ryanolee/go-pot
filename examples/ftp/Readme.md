@@ -13,5 +13,5 @@ Visit localhost:2121 to with an FTP client of your choice (FileZilla has been te
 
 to stop the example, run the following command **in the project root** :
 ```bash
-docker compose -f examples/ftp/docker-compose-ftp.ymll down
+docker compose -f examples/ftp/docker-compose-ftp.yml down
 ```
