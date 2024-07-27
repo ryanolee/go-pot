@@ -5,20 +5,21 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ryanolee/ryan-pot/config"
+	"github.com/ryanolee/ryan-pot/core/metrics"
+	"github.com/ryanolee/ryan-pot/core/stall"
 	"github.com/ryanolee/ryan-pot/generator"
 	"github.com/ryanolee/ryan-pot/generator/encoder"
-	"github.com/ryanolee/ryan-pot/http/metrics"
 	"github.com/ryanolee/ryan-pot/secrets"
 	"go.uber.org/zap"
 )
 
 type HttpStallerFactory struct {
 	// Services
-	pool *HttpStallerPool
-	telemetry *metrics.Telemetry
-	timeoutWatcher *metrics.TimeoutWatcher
+	pool              *stall.StallerPool
+	telemetry         *metrics.Telemetry
+	timeoutWatcher    *metrics.TimeoutWatcher
 	secretsGenerators *secrets.SecretGeneratorCollection
-	configGenerators *generator.ConfigGeneratorCollection
+	configGenerators  *generator.ConfigGeneratorCollection
 
 	// Config
 	bytesPerSecond int
@@ -26,40 +27,41 @@ type HttpStallerFactory struct {
 
 func NewHttpStallerFactory(
 	config *config.Config,
-	pool *HttpStallerPool,
+	pool *stall.StallerPool,
 	timeoutWatcher *metrics.TimeoutWatcher,
 	telemetry *metrics.Telemetry,
 	secretsGeneratorCollection *secrets.SecretGeneratorCollection,
 	configGeneratorCollection *generator.ConfigGeneratorCollection,
 ) *HttpStallerFactory {
 	return &HttpStallerFactory{
-		pool: pool,
-		telemetry: telemetry,
-		timeoutWatcher: timeoutWatcher,
+		pool:              pool,
+		telemetry:         telemetry,
+		timeoutWatcher:    timeoutWatcher,
 		secretsGenerators: secretsGeneratorCollection,
-		configGenerators: configGeneratorCollection,
+		configGenerators:  configGeneratorCollection,
 
 		bytesPerSecond: config.Staller.BytesPerSecond,
 	}
 }
 
 func (f *HttpStallerFactory) FromFiberContext(c *fiber.Ctx) (*HttpStaller, error) {
-	encoder := encoder.GetEncoderForPath(c.Path())
-	gen := getGeneratorForEncoder(encoder, f.configGenerators, f.secretsGenerators)
+	encoderInstance := encoder.GetEncoderForPath(c.Path())
+	gen := generator.GetGeneratorForEncoder(encoderInstance, f.configGenerators, f.secretsGenerators)
 	ip := c.IP()
+	identifier := "http-" + ip
 	opts := &HttpStallerOptions{
-		Request: c,
-		Generator: gen,
+		Request:      c,
+		Generator:    gen,
 		TransferRate: time.Second / time.Duration(f.bytesPerSecond),
-		Timeout: f.timeoutWatcher.GetTimeout(ip),
-		ContentType: encoder.ContentType(),
+		Timeout:      f.timeoutWatcher.GetTimeout(identifier),
+		ContentType:  encoderInstance.ContentType(),
 		OnTimeout: func(stl *HttpStaller) {
 			zap.L().Sugar().Infow("Timeout", "ip", ip, "duration", stl.GetElapsedTime())
-			f.timeoutWatcher.RecordResponse(ip, stl.GetElapsedTime(), false)
+			f.timeoutWatcher.RecordResponse(identifier, stl.GetElapsedTime(), false)
 		},
 		OnClose: func(stl *HttpStaller) {
 			zap.L().Sugar().Infow("Timeout", "ip", ip, "duration", stl.GetElapsedTime())
-			f.timeoutWatcher.RecordResponse(ip, stl.GetElapsedTime(), true)
+			f.timeoutWatcher.RecordResponse(identifier, stl.GetElapsedTime(), true)
 		},
 		Telemetry: f.telemetry,
 	}
@@ -69,15 +71,4 @@ func (f *HttpStallerFactory) FromFiberContext(c *fiber.Ctx) (*HttpStaller, error
 	}
 
 	return staller, nil
-}
-
-func getGeneratorForEncoder( encoder encoder.Encoder, configGenerators *generator.ConfigGeneratorCollection, secretsGenerators *secrets.SecretGeneratorCollection) generator.Generator {
-	switch encoder.GetSupportedGenerator() {
-	case "config":
-		return generator.NewConfigGenerator(encoder, configGenerators, secretsGenerators);
-	case "tabular":
-		return generator.NewTabularGenerator(encoder);
-	default:
-		return nil
-	}
 }

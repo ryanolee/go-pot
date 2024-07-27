@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	validate "github.com/go-playground/validator/v10"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/structs"
 	"github.com/knadh/koanf/v2"
@@ -15,16 +14,20 @@ type (
 	// This struct covers the entire application configuration
 	Config struct {
 		Server         serverConfig         `koanf:"server"`
+		FtpServer      ftpServerConfig      `koanf:"ftp_server"`
 		Logging        loggingConfig        `koanf:"logging"`
 		Cluster        clusterConfig        `koanf:"cluster"`
 		TimeoutWatcher timeoutWatcherConfig `koanf:"timeout_watcher"`
 		Recast         recastConfig         `koanf:"recast"`
 		Telemetry      telemetryConfig      `koanf:"telemetry"`
-		Staller        httpStallerConfig    `koanf:"staller"`
+		Staller        stallerConfig        `koanf:"staller"`
 	}
 
 	// Server specific configuration
 	serverConfig struct {
+		// If the http server should be disabled
+		Disable bool `koanf:"disable"`
+
 		// Server port to listen on
 		Port int `koanf:"port" validate:"required,min=1,max=65535"`
 
@@ -40,6 +43,51 @@ type (
 		// The list of trusted proxies to use if the application is behind a proxy
 		// Must be a list of IP addresses or CIDR ranges
 		TrustedProxies []string `koanf:"trusted_proxies" validate:"omitempty,dive,ipv4|ipv6|cidr|cidrv6"`
+	}
+
+	// Config relating to FTP Server File Transfer
+	ftpTransferConfig struct {
+		// The size of each chunk that makes up each file to be transferred (in bytes)
+		ChunkSize int `koanf:"chunk_size" validate:"omitempty,min=1"`
+
+		// How often a chunk of data (In milliseconds)
+		ChunkSendRate int `koanf:"chunk_rate" validate:"omitempty,min=1"`
+
+		// The size of each file to be advertised to connected clients (in bytes)
+		FileSize int `koanf:"file_size" validate:"omitempty,min=1"`
+	}
+
+	ftpThrottleConfig struct {
+		// The maximum number of pending operations to throttle
+		MaxPendingOperations int `koanf:"max_pending_operations" validate:"required,min=1"`
+
+		// The time to wait before releasing a pending operation
+		WaitTime int `koanf:"wait_time" validate:"required,min=1"`
+	}
+
+	// Settings relating to the FTP server
+	ftpServerConfig struct {
+		// If the FTP server should be enabled
+		Enabled bool `koanf:"enabled"`
+
+		// The port to listen on N.b this is the control port
+		// port 20 is used for data transfer by default in active mode.
+		Port int `koanf:"port" validate:"required,min=1,max=65535"`
+
+		// Host to listen on
+		Host string `koanf:"host" validate:"required"`
+
+		// Lower bound of ports exposed for passive mode default 50000-50100
+		PassivePortRange string `koanf:"passive_port_range" validate:"omitempty,port_range"`
+
+		// The common name for the self signed certificate
+		CertCommonName string `koanf:"cert_common_name" validate:"omitempty"`
+
+		// Commands relating to throttling ongoing connections to the ftp server
+		Throttle ftpThrottleConfig `koanf:"throttle"`
+
+		//
+		Transfer ftpTransferConfig `koanf:"transfer"`
 	}
 
 	// Cluster specific configuration
@@ -204,16 +252,20 @@ type (
 		TimeWastedRatio float64 `koanf:"time_wasted_ratio" validate:"omitempty,min=0,max=1"`
 	}
 
-	httpStallerConfig struct {
+	stallerConfig struct {
 		// The maximum number of connections that can be made to the pot at any given time
 		MaximumConnections int `koanf:"maximum_connections" validate:"required,min=1"`
+
+		// The maximum number of stallers allowed per group (Normally representing a single connected client)
+		// Any connections that exceed this limit will be rejected
+		GroupLimit int `koanf:"group_limit" validate:"required,min=1"`
 
 		// The transfer rate for the staller (bytes per second)
 		BytesPerSecond int `koanf:"bytes_per_second" validate:"omitempty,min=1"`
 	}
 )
 
-func NewConfig(cmd *cobra.Command) (*Config, error) {
+func NewConfig(cmd *cobra.Command, flagsUsed flagMap) (*Config, error) {
 
 	k := koanf.New(".")
 
@@ -227,7 +279,7 @@ func NewConfig(cmd *cobra.Command) (*Config, error) {
 	}
 
 	// Override the default configuration with values given by the flags
-	k = writeFlagValues(k, cmd)
+	k = writeFlagValues(k, cmd, flagsUsed)
 
 	// Write environment variables to the configuration
 	err := k.Load(env.ProviderWithValue("GOPOT__", ".", func(s string, v string) (string, interface{}) {
@@ -253,7 +305,7 @@ func NewConfig(cmd *cobra.Command) (*Config, error) {
 		return nil, err
 	}
 
-	validator := validate.New()
+	validator := newConfigValidator()
 	if err := validator.Struct(cfg); err != nil {
 		return nil, err
 	}

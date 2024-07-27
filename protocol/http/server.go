@@ -9,9 +9,13 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	// Pprof profiler
+	"net/http"
+	_ "net/http/pprof"
+
 	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/http/logging"
-	"github.com/ryanolee/ryan-pot/http/stall"
+	"github.com/ryanolee/ryan-pot/protocol/http/logging"
+	"github.com/ryanolee/ryan-pot/protocol/http/stall"
 )
 
 type (
@@ -32,6 +36,9 @@ func NewServer(
 	logging logging.IServerLogger,
 	stallerFactory *stall.HttpStallerFactory,
 ) *Server {
+	go func() {
+		http.ListenAndServe("localhost:6060", nil)
+	}()
 	// Only enable the trusted proxy check if we have trusted proxies
 	trustedProxyCheck := len(cfg.Server.TrustedProxies) > 0
 	server := &Server{

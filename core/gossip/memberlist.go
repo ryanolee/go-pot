@@ -9,8 +9,8 @@ import (
 
 	"github.com/hashicorp/memberlist"
 	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/http/gossip/action"
-	"github.com/ryanolee/ryan-pot/http/gossip/handler"
+	"github.com/ryanolee/ryan-pot/core/gossip/action"
+	"github.com/ryanolee/ryan-pot/core/gossip/handler"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )

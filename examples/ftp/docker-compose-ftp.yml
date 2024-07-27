@@ -1,0 +1,16 @@
+services:
+  go_pot_as_ftp_server:
+    container_name: go_pot_as_ftp_server
+    build:
+      context: ./../../
+      dockerfile: Dockerfile
+      target: dev
+    volumes:
+      - ./../../:/app:ro
+    ports:
+      - "2121:2121"
+      - "50000-50100:50000-50100"
+    entrypoint: "/go/bin/CompileDaemon --build=\"go build -o /build/go-pot\" --command=\"/build/go-pot ftp\""
+    network_mode: "host"
+ 
+

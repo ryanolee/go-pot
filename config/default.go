@@ -5,11 +5,28 @@ import "go.uber.org/zap/zapcore"
 // Default configuration values for the application
 var defaultConfig = Config{
 	Server: serverConfig{
+		Disable:        false,
 		Port:           8080,
 		Host:           "127.0.0.1",
 		Network:        "tcp4",
 		ProxyHeader:    "X-Forwarded-For",
 		TrustedProxies: []string{},
+	},
+	FtpServer: ftpServerConfig{
+		Enabled:          false,
+		Port:             2121,
+		Host:             "0.0.0.0",
+		PassivePortRange: "50000-50100",
+		CertCommonName:   "unknown",
+		Throttle: ftpThrottleConfig{
+			WaitTime:             1000,
+			MaxPendingOperations: 10,
+		},
+		Transfer: ftpTransferConfig{
+			ChunkSize:     1,
+			ChunkSendRate: 1000,
+			FileSize:      1024 * 1024 * 20, // 20Mb
+		},
 	},
 	Logging: loggingConfig{
 		Level: zapcore.InfoLevel.String(),
@@ -76,8 +93,9 @@ var defaultConfig = Config{
 		MaximumRecastIntervalMin: 120,
 		TimeWastedRatio:          0.05,
 	},
-	Staller: httpStallerConfig{
+	Staller: stallerConfig{
 		MaximumConnections: 200,
+		GroupLimit:         1,
 		BytesPerSecond:     8,
 	},
 }

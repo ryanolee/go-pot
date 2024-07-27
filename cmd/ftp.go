@@ -1,0 +1,37 @@
+package cmd
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/ryanolee/ryan-pot/config"
+	"github.com/ryanolee/ryan-pot/di"
+	"github.com/spf13/cobra"
+)
+
+var ftpCommand = &cobra.Command{
+	Use:   "ftp",
+	Short: "Starts the FTP server",
+	Run: func(cmd *cobra.Command, args []string) {
+		conf, err := config.NewConfig(cmd, config.GetFtpFlags())
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		// Make sure only the FTP server is enabled
+		conf.FtpServer.Enabled = true
+		conf.Server.Disable = true
+
+		di := di.CreateContainer(conf)
+		di.Run()
+
+	},
+}
+
+func init() {
+	config.BindConfigFlags(ftpCommand, config.GetFtpFlags())
+	config.BindConfigFileFlags(ftpCommand)
+	rootCmd.AddCommand(ftpCommand)
+}

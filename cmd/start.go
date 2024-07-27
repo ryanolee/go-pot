@@ -11,27 +11,22 @@ import (
 
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Resync secrets from gitleaks",
+	Short: "Allows for all pots to be started from a single command",
 	Run: func(cmd *cobra.Command, args []string) {
-		_, err := cmd.Flags().GetInt("port")
+		conf, err := config.NewConfig(cmd, config.GetStartFlags())
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		conf, err := config.NewConfig(cmd)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		
 		di := di.CreateContainer(conf)
 		di.Run()
+
 	},
 }
 
 func init() {
-	config.BindConfigFlags(startCmd)
+	config.BindConfigFlags(startCmd, config.GetStartFlags())
 	config.BindConfigFileFlags(startCmd)
 	rootCmd.AddCommand(startCmd)
 }

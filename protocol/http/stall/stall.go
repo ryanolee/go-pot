@@ -10,7 +10,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/ryanolee/ryan-pot/generator"
-	"github.com/ryanolee/ryan-pot/http/metrics"
+	"github.com/ryanolee/ryan-pot/core/metrics"
+	"github.com/ryanolee/ryan-pot/core/stall"
 	"go.uber.org/zap"
 )
 
@@ -37,7 +38,7 @@ type (
 		running     bool
 		runningLock sync.Mutex
 
-		deregisterChan chan *HttpStaller
+		deregisterChan chan stall.Staller
 
 		telemetryTicker *time.Ticker
 		telemetry       *metrics.Telemetry
@@ -87,7 +88,7 @@ func NewHttpStaller(opts *HttpStallerOptions) *HttpStaller {
 	}
 }
 
-func (s *HttpStaller) BindPool(deregisterChan chan *HttpStaller) {
+func (s *HttpStaller) BindToPool(deregisterChan chan stall.Staller) {
 	s.deregisterChan = deregisterChan
 }
 
@@ -192,7 +193,6 @@ func (s *HttpStaller) Halt() {
 	}
 	s.deregisterChan <- s
 	s.Close()
-	//conn.Close()
 }
 
 func (s *HttpStaller) writeDataToClient(w *bufio.Writer, dataToWrite []byte) error {
@@ -238,6 +238,15 @@ func (s *HttpStaller) GetContentType() string {
 func (s *HttpStaller) Close() {
 	s.setRunning(false)
 }
+
+func (s *HttpStaller) GetGroupIdentifier() string {
+	return s.ipAddress
+}
+
+func (s *HttpStaller) GetIdentifier() uint64 {
+	return s.id
+}
+
 
 func (s *HttpStaller) setRunning(running bool) {
 	s.runningLock.Lock()
