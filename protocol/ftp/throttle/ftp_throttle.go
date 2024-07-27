@@ -8,6 +8,7 @@ import (
 
 	"github.com/ryanolee/ryan-pot/config"
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 )
 
 type FtpThrottle struct {
@@ -96,6 +97,8 @@ func (t *FtpThrottle) ReleasePendingProcess(id int64) {
 	waitChannel := t.waitChannels[id][0]
 	waitChannel <- true
 	close(waitChannel)
+
+	zap.L().Sugar().Debug("Released pending operation for conn", "id", id)
 
 	// Remove the released operation from the list
 	t.waitChannels[id] = t.waitChannels[id][1:]

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"maps"
 	"os"
 
 	"github.com/knadh/koanf/v2"
@@ -8,78 +9,19 @@ import (
 	"go.uber.org/zap"
 )
 
-type flagConfig struct {
-	flagName     string
-	configKey    string
-	description  string
-	configType   string
-	defaultValue interface{}
-}
+type (
+	flagConfig struct {
+		flagName     string
+		configKey    string
+		description  string
+		configType   string
+		defaultValue interface{}
+	}
 
-var flagsToConfigMap = map[string]flagConfig{
-	"http-disabled": {
-		flagName:     "http-disabled",
-		configKey:    "server.disable",
-		description:  "Disables the http server for the honeypot.",
-		configType:   "bool",
-		defaultValue: defaultConfig.Server.Disable,
-	},
-	"port": {
-		flagName:     "port",
-		configKey:    "server.port",
-		description:  "The port for the honeypot to listen on.",
-		configType:   "int",
-		defaultValue: defaultConfig.Server.Port,
-	},
-	"host": {
-		flagName:     "host",
-		configKey:    "server.host",
-		description:  "The host for the honeypot to listen on.",
-		configType:   "string",
-		defaultValue: defaultConfig.Server.Host,
-	},
-	"network": {
-		flagName:     "network",
-		configKey:    "server.network",
-		description:  "The network stack to use (tcp, tcp4, tcp6).",
-		configType:   "string",
-		defaultValue: defaultConfig.Server.Network,
-	},
-	"cluster-mode-enabled": {
-		flagName:     "cluster-mode-enabled",
-		configKey:    "cluster.enabled",
-		description:  "Enable cluster mode for connectivity with other honeypots.",
-		configType:   "bool",
-		defaultValue: defaultConfig.Cluster.Enabled,
-	},
-	"cluster-advertise-ip": {
-		flagName:     "cluster-advertise-ip",
-		configKey:    "cluster.advertise_ip",
-		description:  "The IP address to advertise to other honeypots in the cluster.",
-		configType:   "string",
-		defaultValue: defaultConfig.Cluster.AdvertiseIp,
-	},
-	"cluster-known-peers": {
-		flagName:     "cluster-known-peers",
-		configKey:    "cluster.known_peers",
-		description:  "A comma separated list of known peers to connect to.",
-		configType:   "string",
-		defaultValue: "",
-	},
-	"cluster-port": {
-		flagName:     "cluster-port",
-		configKey:    "cluster.bind_port",
-		description:  "The port for the honeypot to listen on for cluster communication. [This port should not be exposed to the internet.]",
-		configType:   "int",
-		defaultValue: defaultConfig.Cluster.BindPort,
-	},
-	"cluster-logging-enabled": {
-		flagName:     "cluster-logging-enabled",
-		configKey:    "cluster.enable_logging",
-		description:  "Enable cluster communication logging. (Useful for debugging cluster connectivity issues)",
-		configType:   "bool",
-		defaultValue: defaultConfig.Cluster.EnableLogging,
-	},
+	flagMap map[string]flagConfig
+)
+
+var commonFlags = flagMap{
 	"telemetry-name": {
 		flagName:     "telemetry-name",
 		configKey:    "telemetry.node_name",
@@ -136,6 +78,66 @@ var flagsToConfigMap = map[string]flagConfig{
 		configType:   "int",
 		defaultValue: defaultConfig.Staller.MaximumConnections,
 	},
+}
+
+var httpFlags = flagMap{
+
+	"port": {
+		flagName:     "port",
+		configKey:    "server.port",
+		description:  "The port for the honeypot to listen on.",
+		configType:   "int",
+		defaultValue: defaultConfig.Server.Port,
+	},
+	"host": {
+		flagName:     "host",
+		configKey:    "server.host",
+		description:  "The host for the honeypot to listen on.",
+		configType:   "string",
+		defaultValue: defaultConfig.Server.Host,
+	},
+	"network": {
+		flagName:     "network",
+		configKey:    "server.network",
+		description:  "The network stack to use (tcp, tcp4, tcp6).",
+		configType:   "string",
+		defaultValue: defaultConfig.Server.Network,
+	},
+	"cluster-mode-enabled": {
+		flagName:     "cluster-mode-enabled",
+		configKey:    "cluster.enabled",
+		description:  "Enable cluster mode for connectivity with other honeypots.",
+		configType:   "bool",
+		defaultValue: defaultConfig.Cluster.Enabled,
+	},
+	"cluster-advertise-ip": {
+		flagName:     "cluster-advertise-ip",
+		configKey:    "cluster.advertise_ip",
+		description:  "The IP address to advertise to other honeypots in the cluster.",
+		configType:   "string",
+		defaultValue: defaultConfig.Cluster.AdvertiseIp,
+	},
+	"cluster-known-peers": {
+		flagName:     "cluster-known-peers",
+		configKey:    "cluster.known_peers",
+		description:  "A comma separated list of known peers to connect to.",
+		configType:   "string",
+		defaultValue: "",
+	},
+	"cluster-port": {
+		flagName:     "cluster-port",
+		configKey:    "cluster.bind_port",
+		description:  "The port for the honeypot to listen on for cluster communication. [This port should not be exposed to the internet.]",
+		configType:   "int",
+		defaultValue: defaultConfig.Cluster.BindPort,
+	},
+	"cluster-logging-enabled": {
+		flagName:     "cluster-logging-enabled",
+		configKey:    "cluster.enable_logging",
+		description:  "Enable cluster communication logging. (Useful for debugging cluster connectivity issues)",
+		configType:   "bool",
+		defaultValue: defaultConfig.Cluster.EnableLogging,
+	},
 	"bytes-per-second": {
 		flagName:     "bytes-per-second",
 		configKey:    "staller.bytes_per_second",
@@ -143,13 +145,9 @@ var flagsToConfigMap = map[string]flagConfig{
 		configType:   "int",
 		defaultValue: defaultConfig.Staller.BytesPerSecond,
 	},
-	"ftp-enabled": {
-		flagName:     "ftp-enabled",
-		configKey:    "ftp_server.enabled",
-		description:  "Enable the FTP service.",
-		configType:   "bool",
-		defaultValue: defaultConfig.FtpServer.Enabled,
-	},
+}
+
+var ftpFlags = flagMap{
 	"ftp-port": {
 		flagName:     "ftp-port",
 		configKey:    "ftp_server.port",
@@ -173,9 +171,54 @@ var flagsToConfigMap = map[string]flagConfig{
 	},
 }
 
+var startFlags = flagMap{
+	"http-disabled": {
+		flagName:     "http-disabled",
+		configKey:    "server.disable",
+		description:  "Disables the http server for the honeypot.",
+		configType:   "bool",
+		defaultValue: defaultConfig.Server.Disable,
+	},
+
+	"ftp-enabled": {
+		flagName:     "ftp-enabled",
+		configKey:    "ftp_server.enabled",
+		description:  "Enable the FTP service.",
+		configType:   "bool",
+		defaultValue: defaultConfig.FtpServer.Enabled,
+	},
+}
+
+func GetStartFlags() flagMap {
+	allFlags := make(flagMap)
+
+	maps.Copy(allFlags, commonFlags)
+	maps.Copy(allFlags, httpFlags)
+	maps.Copy(allFlags, ftpFlags)
+	maps.Copy(allFlags, startFlags)
+
+	return allFlags
+}
+
+func GetFtpFlags() flagMap {
+	internalFtpFlags := make(flagMap)
+	maps.Copy(internalFtpFlags, ftpFlags)
+	maps.Copy(internalFtpFlags, commonFlags)
+
+	return internalFtpFlags
+}
+
+func GetHttpFlags() flagMap {
+	internalHttpFlags := make(flagMap)
+	maps.Copy(internalHttpFlags, httpFlags)
+	maps.Copy(internalHttpFlags, commonFlags)
+
+	return internalHttpFlags
+}
+
 // Binds configuration flags to the provided command
-func BindConfigFlags(cmd *cobra.Command) *cobra.Command {
-	for _, flag := range flagsToConfigMap {
+func BindConfigFlags(cmd *cobra.Command, flagsToMap flagMap) *cobra.Command {
+	for _, flag := range flagsToMap {
 		switch flag.configType {
 		case "int":
 			cmd.Flags().Int(flag.flagName, flag.defaultValue.(int), flag.description)
@@ -199,8 +242,8 @@ func readFlagOrPanic[F any](flag F, err error) F {
 	return flag
 }
 
-func writeFlagValues(k *koanf.Koanf, cmd *cobra.Command) *koanf.Koanf {
-	for _, flag := range flagsToConfigMap {
+func writeFlagValues(k *koanf.Koanf, cmd *cobra.Command, flagsUsed flagMap) *koanf.Koanf {
+	for _, flag := range flagsUsed {
 		if !cmd.Flags().Changed(flag.flagName) {
 			continue
 		}

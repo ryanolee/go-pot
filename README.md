@@ -5,10 +5,11 @@ A HTTP tarpit written in Go designed to maximize bot misery through very slowly 
 
 ## Features
 - **Realistic output**: Go pot will respond to requests with an infinite stream of realistic looking, parseable structured data full of fake secrets. `xml`, `json`, `yaml`, `hcl`, `toml`, `csv`, `ini`, and `sql` are all supported.
+- **Multiple protocols**: Both `http` and `ftp` are supported out of the box. Each with a tailored implementation. *More protocols are planned.*
 - **Intelligent stalling**: Go pot will attempt to work out how long a bot is willing to wait for a response and stall for exactly that long. This is done gradually making requests slower and slower until a timeout is reached. (Or the bot hangs forever!)
 - **Small Profile**: Go pot can run on extremely low resource machines and is designed to be as lightweight as possible.
 - **Clustering Support**: Go pot can be run in a clustered mode where multiple instances can share information about how long bots are willing to wait for a response. Also in cluster mode nodes can be configured to restart / reallocate IP addresses to avoid being blacklisted by connecting clients.
-- **Customizable**: Go pot can be customized to respond with different different response times support for more protocols is planned.
+- **Customizable**: Go pot can be customized to respond with different different response times.
 
 ## Installation
 Go pot is distributed as a standalone go binary or docker image. You can download the latest release from the [releases page](https://github.com/ryanolee/go-pot/releases). Docker images are available on the [ghcr.io registry](https://github.com/ryanolee/go-pot/pkgs/container/go-pot).
@@ -50,7 +51,7 @@ Go pot was originally inspired by the [Reverse slow loris](https://github.com/ni
 The go pot logo created by `@_iroshi` and is licensed under the [CC0](https://creativecommons.org/publicdomain/zero/1.0/) license.
 
 ## What the future holds 🔮
-- **More protocols**: Support for more protocols is planned. Including `ssh`, `sql`, `ftp`, `smtp` and more. Anything that can be stalled will be stalled and must be stalled!
+- **More protocols**: Support for more protocols is planned. Including `ssh`, `sql`, `smtp` and more. Anything that can be stalled will be stalled and must be stalled!
 - **Tests**: There are *no* unit tests. The was originally built as a proof of concept for a talk and has been refactored several times since. It is still in need of firmer testing.
 
 (Originally the subject of a talk for [Birmingham go](https://www.meetup.com/golang-birmingham/))

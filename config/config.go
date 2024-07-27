@@ -265,7 +265,7 @@ type (
 	}
 )
 
-func NewConfig(cmd *cobra.Command) (*Config, error) {
+func NewConfig(cmd *cobra.Command, flagsUsed flagMap) (*Config, error) {
 
 	k := koanf.New(".")
 
@@ -279,7 +279,7 @@ func NewConfig(cmd *cobra.Command) (*Config, error) {
 	}
 
 	// Override the default configuration with values given by the flags
-	k = writeFlagValues(k, cmd)
+	k = writeFlagValues(k, cmd, flagsUsed)
 
 	// Write environment variables to the configuration
 	err := k.Load(env.ProviderWithValue("GOPOT__", ".", func(s string, v string) (string, interface{}) {

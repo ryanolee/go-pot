@@ -17,7 +17,7 @@ var defaultConfig = Config{
 		Port:             2121,
 		Host:             "0.0.0.0",
 		PassivePortRange: "50000-50100",
-		CertCommonName:   "Unknown",
+		CertCommonName:   "unknown",
 		Throttle: ftpThrottleConfig{
 			WaitTime:             1000,
 			MaxPendingOperations: 10,

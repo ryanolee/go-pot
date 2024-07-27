@@ -27,7 +27,6 @@ func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory, throttle *
 	}
 
 	lowerRange, upperRange, err := config.ParsePortRange(c.FtpServer.PassivePortRange)
-
 	if err != nil {
 		return nil, err
 	}
