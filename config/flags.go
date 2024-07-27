@@ -17,6 +17,13 @@ type flagConfig struct {
 }
 
 var flagsToConfigMap = map[string]flagConfig{
+	"http-disabled": {
+		flagName:     "http-disabled",
+		configKey:    "server.disable",
+		description:  "Disables the http server for the honeypot.",
+		configType:   "bool",
+		defaultValue: defaultConfig.Server.Disable,
+	},
 	"port": {
 		flagName:     "port",
 		configKey:    "server.port",
@@ -135,6 +142,34 @@ var flagsToConfigMap = map[string]flagConfig{
 		description:  "The number of bytes to transfer per second.",
 		configType:   "int",
 		defaultValue: defaultConfig.Staller.BytesPerSecond,
+	},
+	"ftp-enabled": {
+		flagName:     "ftp-enabled",
+		configKey:    "ftp_server.enabled",
+		description:  "Enable the FTP service.",
+		configType:   "bool",
+		defaultValue: defaultConfig.FtpServer.Enabled,
+	},
+	"ftp-port": {
+		flagName:     "ftp-port",
+		configKey:    "ftp_server.port",
+		description:  "The port for the FTP service to listen on.",
+		configType:   "int",
+		defaultValue: defaultConfig.FtpServer.Port,
+	},
+	"ftp-host": {
+		flagName:     "ftp-host",
+		configKey:    "ftp_server.host",
+		description:  "The host for the FTP service to listen on.",
+		configType:   "string",
+		defaultValue: defaultConfig.FtpServer.Host,
+	},
+	"ftp-passive-ports": {
+		flagName:     "ftp-passive-ports",
+		configKey:    "ftp_server.passive_port_range",
+		description:  "The range of passive ports to use for FTP data connections. (in the format of 'start-end')",
+		configType:   "string",
+		defaultValue: defaultConfig.FtpServer.PassivePortRange,
 	},
 }
 

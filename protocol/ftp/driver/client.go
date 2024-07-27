@@ -126,7 +126,9 @@ func (f *FtpClientDriver) Stat(name string) (os.FileInfo, error) {
 		return nil, err
 	}
 
-	return NewFtpFileInfo(name), nil
+	fileSize := f.repo.GetConfig().FtpServer.Transfer.FileSize
+
+	return NewFtpFileInfo(name, fileSize), nil
 }
 
 func (f *FtpClientDriver) Name() string {

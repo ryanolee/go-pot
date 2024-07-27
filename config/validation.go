@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"regexp"
 	"strconv"
 
@@ -9,22 +10,28 @@ import (
 
 var portRangeRegex = regexp.MustCompile(`^(\d+)-(\d+)$`)
 
-func validatePortRange(portRange validator.FieldLevel) bool {
-	// Extract the min and max port values
-	matches := portRangeRegex.FindStringSubmatch(portRange.Field().String())
-
-	// Check sting matches
+func ParsePortRange(portRange string) (int, int, error) {
+	matches := portRangeRegex.FindStringSubmatch(portRange)
 	if len(matches) < 3 {
-		return false
+		return 0, 0, errors.New("invalid port range")
 	}
 
-	// Convert the port values to integers
 	minPort, err := strconv.Atoi(matches[1])
 	if err != nil {
-		return false
+		return 0, 0, err
 	}
 
 	maxPort, err := strconv.Atoi(matches[2])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return minPort, maxPort, nil
+}
+
+func validatePortRange(portRange validator.FieldLevel) bool {
+	// Extract the min and max port values
+	minPort, maxPort, err := ParsePortRange(portRange.Field().String())
 	if err != nil {
 		return false
 	}

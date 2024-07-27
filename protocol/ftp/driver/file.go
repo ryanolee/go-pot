@@ -14,12 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	transferChunkSize = 16
-	transferDelay     = time.Millisecond * 100
-	fileSize          = 1024 * 1024 // 1MB
-)
-
 // FTP File handles I/O operations for a single file
 // FTP Sever Driver --> FTP Client Driver --> [FTP File], FTP File Info
 type FtpFile struct {
@@ -32,17 +26,26 @@ type FtpFile struct {
 	// Service references
 	gen *filesystem.FilesystemGenerator
 	ctx ftpserver.ClientContext
+
+	// Config
+	transferChunkSize int
+	transferDelay     time.Duration
+	fileSize          int
 }
 
 var crc64Table = crc64.MakeTable(crc64.ISO)
 
 func NewFtpFile(name string, gen *filesystem.FilesystemGenerator, ctx ftpserver.ClientContext, repo *di.FtpRepository) *FtpFile {
+	fileSize := repo.GetConfig().FtpServer.Transfer.FileSize
 	return &FtpFile{
-		name:       name,
-		gen:        gen,
-		seedOffset: int64(crc64.Checksum([]byte(name), crc64Table)),
-		ctx:        ctx,
-		stall:      repo.GetFtpStallFactory().FromName(ctx, name, fileSize),
+		name:              name,
+		gen:               gen,
+		seedOffset:        int64(crc64.Checksum([]byte(name), crc64Table)),
+		ctx:               ctx,
+		stall:             repo.GetFtpStallFactory().FromName(ctx, name, fileSize),
+		transferChunkSize: repo.GetConfig().FtpServer.Transfer.ChunkSize,
+		transferDelay:     time.Duration(repo.GetConfig().FtpServer.Transfer.ChunkSendRate) * time.Millisecond,
+		fileSize:          fileSize,
 	}
 }
 
@@ -53,13 +56,13 @@ func (f *FtpFile) Close() error {
 }
 
 func (f *FtpFile) Read(p []byte) (n int, err error) {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.Read", fileSize)
-	time.Sleep(transferDelay)
+	zap.L().Sugar().Debug("__STUB__  FtpFile.Read", f.fileSize)
+	time.Sleep(f.transferDelay)
 	return f.stall.Read(p)
 }
 
 func (f *FtpFile) ReadAt(p []byte, off int64) (n int, err error) {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.ReadAt", fileSize, off)
+	zap.L().Sugar().Debug("__STUB__  FtpFile.ReadAt", off)
 	return 0, io.EOF
 }
 
@@ -90,7 +93,7 @@ func (f *FtpFile) Readdir(count int) ([]os.FileInfo, error) {
 	files := f.gen.Generate()
 	fileInfo := make([]os.FileInfo, 0)
 	for _, file := range files {
-		fileInfo = append(fileInfo, NewFtpFileInfo(file.Name))
+		fileInfo = append(fileInfo, NewFtpFileInfo(file.Name, f.fileSize))
 	}
 
 	return fileInfo, nil

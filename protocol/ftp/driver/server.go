@@ -26,6 +26,12 @@ func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory, throttle *
 		return nil, err
 	}
 
+	lowerRange, upperRange, err := config.ParsePortRange(c.FtpServer.PassivePortRange)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &FtpServerDriver{
 		clientFactory: cf,
 		throttle:      throttle,
@@ -46,8 +52,8 @@ func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory, throttle *
 			// Connection port range
 			ListenAddr: fmt.Sprintf("%s:%d", c.FtpServer.Host, c.FtpServer.Port),
 			PassiveTransferPortRange: &ftpserver.PortRange{
-				Start: 50000,
-				End:   50100,
+				Start: lowerRange,
+				End:   upperRange,
 			},
 
 			// Disable active mode

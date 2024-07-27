@@ -25,8 +25,8 @@ func getSelfSignedCert(c *config.Config) (tls.Certificate, error) {
 	certTemplate := &x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
-			Organization: []string{""},
-			CommonName:   c.FtpServer.CertCommonName,
+			Organization: []string{"foobaz"},
+			CommonName:   "localhost",
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(1, 0, 0),

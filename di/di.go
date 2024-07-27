@@ -1,6 +1,7 @@
 package di
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -33,6 +34,12 @@ import (
 
 // Creates the dependency injection container for the application
 func CreateContainer(conf *config.Config) *fx.App {
+
+	if !conf.FtpServer.Enabled && conf.Server.Disable {
+		fmt.Print("Both FTP and HTTP servers are disabled. There is nothing to do. Exiting.")
+		os.Exit(0)
+	}
+
 	return fx.New(
 		fx.Supply(conf),
 		fx.Provide(
@@ -106,8 +113,9 @@ func CreateContainer(conf *config.Config) *fx.App {
 
 		// Start HTTP server
 		fx.Invoke(func(c *config.Config, s *http.Server) {
-			if !conf.Server.Enabled {
+			if conf.Server.Disable {
 				zap.L().Info("Http is disabled")
+				return
 			}
 			zap.L().Info("Starting Http server", zap.Int("port", s.ListenPort), zap.String("host", s.ListenHost))
 			go s.Start()
@@ -117,8 +125,9 @@ func CreateContainer(conf *config.Config) *fx.App {
 		fx.Invoke(func(c *config.Config, s *ftpserver.FtpServer) {
 			if !conf.FtpServer.Enabled {
 				zap.L().Info("Ftp is disabled")
+				return
 			}
-			zap.L().Info("Starting Ftp server", zap.Int("port", c.FtpServer.Port), zap.String("host", c.FtpServer.Host))
+			zap.L().Info("Starting Ftp server", zap.Int("port", c.FtpServer.Port), zap.String("host", c.FtpServer.Host), zap.String("passive_port_range", c.FtpServer.PassivePortRange))
 			go s.ListenAndServe()
 		}),
 

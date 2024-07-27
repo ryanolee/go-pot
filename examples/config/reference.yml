@@ -4,6 +4,9 @@
 
 # Configuration for the go-pot server
 server:
+  # If the http staller should be enabled
+  enabled: true
+
   # Port for the go-pot server to listen on
   port: 8080
 
@@ -171,3 +174,46 @@ staller:
 
   # The transfer rate for the staller (bytes per second)
   bytes_per_second: 8
+
+# Metric configuration for the FTP side of the staller
+ftp_server:
+
+  # If the fep server should be enabled or not
+  enabled: false
+
+  # Port the FTP server should bind to
+  port: 2121
+
+  # The host for the go pot server
+  host: 0.0.0.0
+
+  # The range passive FTP connections should be exposed on
+  passive_port_range: 50000-50100
+
+  # The common certificate name for Sftp connections
+  common_cert_name: ""
+
+  # Throttle related configuration. Relates to rate limiting how fast commands to the FTP server can be made
+  throttle:
+
+    # The maximum number of open pending operations
+    max_pending_operations: 10
+
+    # The amount of time to wait between operations
+    wait_time: 1000
+
+  # Options relating to file downloads
+  transfer:
+
+    # The size of each chunk to transfer (in bytes)
+    chunk_size: 1
+
+    # The rate to send each chunk with (in MS)
+    chunk_rate: 1000
+
+    # The file size in bytes (20 MB by default)
+    file_size: 20971520
+
+
+
+  

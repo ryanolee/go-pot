@@ -25,8 +25,8 @@ type (
 
 	// Server specific configuration
 	serverConfig struct {
-		// If the server should be enabled
-		Enabled bool `koanf:"enabled"`
+		// If the http server should be disabled
+		Disable bool `koanf:"disable"`
 
 		// Server port to listen on
 		Port int `koanf:"port" validate:"required,min=1,max=65535"`

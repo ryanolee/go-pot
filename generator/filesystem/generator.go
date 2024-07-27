@@ -38,13 +38,10 @@ type (
 	}
 
 	FilesystemEntry struct {
-		Size  int64
 		Name  string
 		IsDir bool
 	}
 )
-
-const FileSize = 1024 * 1024 // 1MB
 
 // Note that this is not thread safe. Each seeded rand needs to be set per client
 func NewFilesystemGenerator(seed int64) *FilesystemGenerator {
@@ -74,7 +71,6 @@ func (fg *FilesystemGenerator) GenerateFile() *FilesystemEntry {
 
 	return &FilesystemEntry{
 		Name:  fmt.Sprintf("%s.%s", fileName, fileExt),
-		Size:  FileSize,
 		IsDir: false,
 	}
 }
@@ -104,5 +100,5 @@ func (fg *FilesystemGenerator) GenerateDirectory() *FilesystemEntry {
 
 // Filesystem file stringer methods
 func (fe *FilesystemEntry) String() string {
-	return fmt.Sprintf("File: %s, Size: %d, IsDir: %t", fe.Name, fe.Size, fe.IsDir)
+	return fmt.Sprintf("File: %s, IsDir: %t", fe.Name, fe.IsDir)
 }
