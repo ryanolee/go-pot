@@ -22,7 +22,8 @@ type FtpFileInfo struct {
 
 func NewFtpFileInfo(path string, fileSize int) *FtpFileInfo {
 	return &FtpFileInfo{
-		path: path,
+		path:     path,
+		fileSize: fileSize,
 	}
 }
 
