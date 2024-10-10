@@ -1,0 +1,215 @@
+# Configuration reference file for go-pot
+# Please refer to config/config.go for more specifics on each field
+# Each value is the default value for the field if not specified in the configuration file
+
+# Configuration for the go-pot server
+server:
+  # If the http staller should be enabled
+  enabled: true
+
+  # Port for the go-pot server to listen on
+  port: 8080
+
+  # Host for the go-pot server to listen on
+  host: 127.0.0.1
+
+  # The network stack to listen on. One of: tcp, tcp4, tcp6
+  network: "tcp4"
+
+  # Trusted proxies for the server. This is a comma separated list of CIDR ranges, or Ip addresses (v4 or v6)
+  trusted_proxies: ""
+
+  # The header to use for the proxy header. This is the header that will be used to determine the IP address of the client
+  proxy_header: "X-Forwarded-For"
+
+  
+
+# Configuration for logging related settings for go-pot
+logging:
+  # One of: debug, info, warn, error, dpanic, panic, fatal
+  level: info
+
+# Clustering related settings for go-pot
+cluster:
+  # Whether or not to enable clustering
+  enabled: false
+
+  # One of: lan, wan, fargate_ecs. Please refer to config/config.go for what each mode means
+  mode: "lan"
+
+  # The cluster communication port. Please note this should not be accessible from the internet
+  bind_port: 7946
+
+  # The cluster advertise port. This should be a valid ipv4 address the pot can be reached on
+  advertise_ip: ""
+
+  # Atleast one known peer is required for clustering to work upon startup
+  known_peer_ips: ""
+
+  # If logging should be enabled for cluster communication
+  enable_logging: false
+
+  # The maximum number of connection attempts to make to a peer before giving up
+  connection_attempts: 5
+
+  # The amount of time to wait before retrying a connection to a peer
+  connection_timeout_secs: 5
+
+timeout_watcher:
+  # If the timeout watcher is enabled. In the event that this is disabled
+  enabled: true
+
+  # The number of requests that are allowed before things begin slowing down
+  grace_requests: 3
+
+  # The timeout given by requests that are in the grace set of requests in milliseconds
+  grace_timeout_ms: 100
+
+  # The TTL (in seconds) for the hot cache pool [Memory of recent requests]
+  # 1 hour
+  hot_pool_ttl_sec: 3600 
+
+  # The TTL (in seconds) for the cold cache pool [Long term memory of requests]
+  #2 days
+  cold_pool_ttl_sec: 172800 
+
+  # The maximum amount of time a given IP can be hanging before we consider the IP
+  # to be vulnerable to hanging forever on a request. Any ips that get past this threshold
+  # will always be given the longest timeout
+  # 3 minutes
+  instant_commit_threshold_ms: 180000 
+
+  # The upper bound for increasing timeouts in milliseconds. Once the timeout increases to reach this bound we will hang forever.
+  # 1 minute
+  upper_timeout_bound_ms: 60000
+
+  # The smallest timeout we will ever give im milliseconds
+  # 1 second
+  lower_timeout_bound_ms: 1000
+
+  # The amount of time to wait when hanging an IP "forever"
+  # 7 days
+  longest_timeout_ms: 604800000
+
+  # The increment we will increase timeouts by for requests with timeouts larger than 30 seconds
+  # 10 seconds
+  timeout_over_thirty_increment_ms: 10000
+
+  # The increment we will increase timeouts by for requests with timeouts smaller than 30 seconds
+  # 5 seconds
+  timeout_sub_thirty_increment_ms: 5000
+
+  # The increment we will increase timeouts by for requests with timeouts smaller than 10 seconds
+  # 1 second
+  timeout_sub_ten_increment_ms: 1000
+
+  # The number of samples to take to detect a timeout
+  sample_size: 3
+
+  # How standard deviation of the last "sample_size" requests to take before committing to a timeout
+  sample_deviation_ms: 1000
+
+# Telemetry specific configuration
+telemetry:
+  # If telemetry is enabled or not
+  enabled: false
+
+  # The node name for identifying the said node
+  node_name: ""
+
+  # Using with prometheus push gateway
+  push_gateway:
+    enabled: false
+
+    # The address of the push gateway
+    endpoint: ""
+
+    # The username for the push gateway (For basic auth)
+    username: ""
+
+    # The password for the push gateway (For basic auth)
+    password: ""
+
+    # The interval in seconds to push metrics to the push gateway
+    # Default: 60
+    push_interval_secs: 60
+
+  prometheus:
+    # If the prometheus server is enabled
+    enabled: false
+
+    # The port for the prometheus collection endpoint
+    port: 9001
+
+    # The path for the prometheus endpoint
+    path: "/metrics"
+
+  metrics:
+    # If prometheus should expose the secrets generated metric
+    track_secrets_generated: true
+
+    # If prometheus should expose the time wasted metric
+    track_time_wasted: true
+
+# "Recast" specific configuration 
+# Recasting in this context is the process of shutting down the server after a certain amount of time
+# in the event the server has not wasted enough time
+recast:
+  # If the recast system is enabled or not
+  enabled: false
+
+  # The minimum interval in minutes to wait before recasting
+  minimum_recast_interval_min: 30
+
+  # The maximum interval in minutes to wait before recasting
+  maximum_recast_interval_min: 120
+
+  # The ratio of time wasted to time spent. If the ratio is less than this value then the node should recast
+  time_wasted_ratio: 0.05
+
+# Staller specific configuration
+staller:
+  # The maximum number of open connections that can be made to the pot at any given time
+  maximum_connections: 200
+
+  # The transfer rate for the staller (bytes per second)
+  bytes_per_second: 8
+
+# Metric configuration for the FTP side of the staller
+ftp_server:
+
+  # If the fep server should be enabled or not
+  enabled: false
+
+  # Port the FTP server should bind to
+  port: 2121
+
+  # The host for the go pot server
+  host: 0.0.0.0
+
+  # The range passive FTP connections should be exposed on
+  passive_port_range: 50000-50100
+
+  # The common certificate name for Sftp connections
+  common_cert_name: ""
+
+  # Throttle related configuration. Relates to rate limiting how fast commands to the FTP server can be made
+  throttle:
+
+    # The maximum number of open pending operations
+    max_pending_operations: 10
+
+    # The amount of time to wait between operations
+    wait_time: 1000
+
+  # Options relating to file downloads
+  transfer:
+
+    # The size of each chunk to transfer (in bytes)
+    chunk_size: 1
+
+    # The rate to send each chunk with (in MS)
+    chunk_rate: 1000
+
+    # The file size in bytes (20 MB by default)
+    file_size: 20971520

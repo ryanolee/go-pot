@@ -1,0 +1,11 @@
+services:
+  go-pot:
+    build: .
+    image: dtagdevsec/go-pot:testing
+    read_only: true
+    container_name: go-pot
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./log/:/opt/go-pot/log/

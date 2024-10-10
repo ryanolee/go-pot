@@ -56,11 +56,11 @@ func (f *HttpStallerFactory) FromFiberContext(c *fiber.Ctx) (*HttpStaller, error
 		Timeout:      f.timeoutWatcher.GetTimeout(identifier),
 		ContentType:  encoderInstance.ContentType(),
 		OnTimeout: func(stl *HttpStaller) {
-			zap.L().Sugar().Infow("Timeout", "ip", ip, "duration", stl.GetElapsedTime())
+			zap.L().Sugar().Infow("Timeout", "src_ip", ip, "duration", stl.GetElapsedTime())
 			f.timeoutWatcher.RecordResponse(identifier, stl.GetElapsedTime(), false)
 		},
 		OnClose: func(stl *HttpStaller) {
-			zap.L().Sugar().Infow("Timeout", "ip", ip, "duration", stl.GetElapsedTime())
+			zap.L().Sugar().Infow("Timeout", "src_ip", ip, "duration", stl.GetElapsedTime())
 			f.timeoutWatcher.RecordResponse(identifier, stl.GetElapsedTime(), true)
 		},
 		Telemetry: f.telemetry,

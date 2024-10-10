@@ -3,6 +3,7 @@ package logging
 import (
 	"github.com/gofiber/contrib/fiberzap/v2"
 	"github.com/gofiber/fiber/v2"
+	"github.com/ua-parser/uap-go/uaparser" // Updated User-Agent parsing library
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -24,44 +25,67 @@ func NewServerLogger(logger *zap.Logger) *ServerLogger {
 }
 
 func (s *ServerLogger) Use(app *fiber.App) *zap.Logger {
-	app.Use(fiberzap.New(fiberzap.Config{
-		Logger: s.logger,
-		FieldsFunc: func(c *fiber.Ctx) []zapcore.Field {
-			userAgent := c.Request().Header.UserAgent()
-			length := len(userAgent)
-			if length > 128 {
-				length = 128
-			}
-			userAgent = userAgent[:length]
-			return []zapcore.Field{
-				{
-					Key:    "ip",
-					Type:   zapcore.StringType,
-					String: c.IP(),
-				},
-				{
-					Key:    "user-agent",
-					Type:   zapcore.StringType,
-					String: string(userAgent),
-				},
-				{
-					Key:    "path",
-					Type:   zapcore.StringType,
-					String: c.Path(),
-				},
-				{
-					Key:     "status",
-					Type:    zapcore.Int8Type,
-					Integer: int64(c.Response().StatusCode()),
-				},
-				{
-					Key:    "path",
-					Type:   zapcore.StringType,
-					String: c.Path(),
-				},
-			}
-		},
-	}))
+    app.Use(fiberzap.New(fiberzap.Config{
+        Logger: s.logger,
+        FieldsFunc: func(c *fiber.Ctx) []zapcore.Field {
+            userAgent := c.Request().Header.UserAgent()
 
-	return s.logger
+            // Parse the User-Agent string using ua-parser
+            parser := uaparser.NewFromSaved() // Creates a new parser instance
+            client := parser.Parse(string(userAgent))
+
+            // Extract browser, OS, and device information
+            browserName := client.UserAgent.Family
+            browserVersion := client.UserAgent.ToVersionString()
+            os := client.Os.ToString()
+            device := client.Device.Family
+
+            length := len(userAgent)
+            if length > 128 {
+                length = 128
+            }
+            userAgent = userAgent[:length]
+
+            return []zapcore.Field{
+                {
+                    Key:    "src_ip",
+                    Type:   zapcore.StringType,
+                    String: c.IP(),
+                },
+                {
+                    Key:    "user-agent",
+                    Type:   zapcore.StringType,
+                    String: string(userAgent),
+                },
+                {
+                    Key:    "browser",
+                    Type:   zapcore.StringType,
+                    String: browserName,
+                },
+                {
+                    Key:    "browser-version",
+                    Type:   zapcore.StringType,
+                    String: browserVersion,
+                },
+                {
+                    Key:    "os",
+                    Type:   zapcore.StringType,
+                    String: os,
+                },
+                {
+                    Key:    "device",
+                    Type:   zapcore.StringType,
+                    String: device,
+                },
+                {
+                    Key:    "path",
+                    Type:   zapcore.StringType,
+                    String: c.Path(),
+                },
+                // Removed duplicate custom status field
+            }
+        },
+    }))
+
+    return s.logger
 }
