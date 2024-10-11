@@ -3,9 +3,11 @@ package logging
 import (
 	"github.com/gofiber/contrib/fiberzap/v2"
 	"github.com/gofiber/fiber/v2"
-	"github.com/ua-parser/uap-go/uaparser" // Updated User-Agent parsing library
+	"github.com/ua-parser/uap-go/uaparser"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"net"
+	"strings"
 )
 
 type (
@@ -31,7 +33,7 @@ func (s *ServerLogger) Use(app *fiber.App) *zap.Logger {
             userAgent := c.Request().Header.UserAgent()
 
             // Parse the User-Agent string using ua-parser
-            parser := uaparser.NewFromSaved() // Creates a new parser instance
+            parser := uaparser.NewFromSaved()
             client := parser.Parse(string(userAgent))
 
             // Extract browser, OS, and device information
@@ -45,6 +47,18 @@ func (s *ServerLogger) Use(app *fiber.App) *zap.Logger {
                 length = 128
             }
             userAgent = userAgent[:length]
+
+            // Extract destination port from the request host
+            host := string(c.Request().Host())
+            _, port, err := net.SplitHostPort(host)
+            if err != nil {
+                // Set default port based on the scheme (HTTP or HTTPS)
+                if strings.EqualFold(c.Protocol(), "https") {
+                    port = "443"
+                } else {
+                    port = "80"
+                }
+            }
 
             return []zapcore.Field{
                 {
@@ -82,7 +96,11 @@ func (s *ServerLogger) Use(app *fiber.App) *zap.Logger {
                     Type:   zapcore.StringType,
                     String: c.Path(),
                 },
-                // Removed duplicate custom status field
+                {
+                    Key:    "dest_port",
+                    Type:   zapcore.StringType,
+                    String: port,
+                },
             }
         },
     }))
