@@ -9,10 +9,6 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	// Pprof profiler
-	"net/http"
-	_ "net/http/pprof"
-
 	"github.com/ryanolee/ryan-pot/config"
 	"github.com/ryanolee/ryan-pot/protocol/http/logging"
 	"github.com/ryanolee/ryan-pot/protocol/http/stall"
@@ -36,11 +32,9 @@ func NewServer(
 	logging logging.IServerLogger,
 	stallerFactory *stall.HttpStallerFactory,
 ) *Server {
-	go func() {
-		http.ListenAndServe("localhost:6060", nil)
-	}()
 	// Only enable the trusted proxy check if we have trusted proxies
 	trustedProxyCheck := len(cfg.Server.TrustedProxies) > 0
+
 	server := &Server{
 		App: fiber.New(fiber.Config{
 			IdleTimeout:             time.Second * 15,
@@ -51,6 +45,11 @@ func NewServer(
 			ProxyHeader:             cfg.Server.ProxyHeader,
 			TrustedProxies:          cfg.Server.TrustedProxies,
 			EnableTrustedProxyCheck: trustedProxyCheck,
+			ErrorHandler: func(c *fiber.Ctx, err error) error {
+				// All is always ok even if we have an error. Just log it and return an empty response
+				zap.L().Error("Error in request", zap.Error(err))
+				return c.Status(fiber.StatusOK).SendString("{}")
+			},
 		}),
 
 		ListenPort: cfg.Server.Port,
@@ -66,9 +65,6 @@ func NewServer(
 		},
 	})
 
-	server.Logger = logging.Use(server.App)
-	zap.ReplaceGlobals(server.Logger)
-
 	return server
 }
 
@@ -79,7 +75,6 @@ func (s *Server) Start() error {
 	})
 
 	s.App.Get("/*", func(c *fiber.Ctx) error {
-
 		staller, err := s.stallerFactory.FromFiberContext(c)
 		if err != nil {
 			return err

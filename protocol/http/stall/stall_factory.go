@@ -9,8 +9,8 @@ import (
 	"github.com/ryanolee/ryan-pot/core/stall"
 	"github.com/ryanolee/ryan-pot/generator"
 	"github.com/ryanolee/ryan-pot/generator/encoder"
+	"github.com/ryanolee/ryan-pot/protocol/http/logging"
 	"github.com/ryanolee/ryan-pot/secrets"
-	"go.uber.org/zap"
 )
 
 type HttpStallerFactory struct {
@@ -20,6 +20,9 @@ type HttpStallerFactory struct {
 	timeoutWatcher    *metrics.TimeoutWatcher
 	secretsGenerators *secrets.SecretGeneratorCollection
 	configGenerators  *generator.ConfigGeneratorCollection
+
+	// Logger
+	logger *logging.HttpAccessLogger
 
 	// Config
 	bytesPerSecond int
@@ -32,6 +35,7 @@ func NewHttpStallerFactory(
 	telemetry *metrics.Telemetry,
 	secretsGeneratorCollection *secrets.SecretGeneratorCollection,
 	configGeneratorCollection *generator.ConfigGeneratorCollection,
+	logger *logging.HttpAccessLogger,
 ) *HttpStallerFactory {
 	return &HttpStallerFactory{
 		pool:              pool,
@@ -39,12 +43,15 @@ func NewHttpStallerFactory(
 		timeoutWatcher:    timeoutWatcher,
 		secretsGenerators: secretsGeneratorCollection,
 		configGenerators:  configGeneratorCollection,
+		logger:            logger,
 
 		bytesPerSecond: config.Staller.BytesPerSecond,
 	}
 }
 
 func (f *HttpStallerFactory) FromFiberContext(c *fiber.Ctx) (*HttpStaller, error) {
+	entry := f.logger.Start(c)
+
 	encoderInstance := encoder.GetEncoderForPath(c.Path())
 	gen := generator.GetGeneratorForEncoder(encoderInstance, f.configGenerators, f.secretsGenerators)
 	ip := c.IP()
@@ -56,11 +63,11 @@ func (f *HttpStallerFactory) FromFiberContext(c *fiber.Ctx) (*HttpStaller, error
 		Timeout:      f.timeoutWatcher.GetTimeout(identifier),
 		ContentType:  encoderInstance.ContentType(),
 		OnTimeout: func(stl *HttpStaller) {
-			zap.L().Sugar().Infow("Timeout", "ip", ip, "duration", stl.GetElapsedTime())
+			f.logger.End(entry, stl.GetElapsedTime())
 			f.timeoutWatcher.RecordResponse(identifier, stl.GetElapsedTime(), false)
 		},
 		OnClose: func(stl *HttpStaller) {
-			zap.L().Sugar().Infow("Timeout", "ip", ip, "duration", stl.GetElapsedTime())
+			f.logger.End(entry, stl.GetElapsedTime())
 			f.timeoutWatcher.RecordResponse(identifier, stl.GetElapsedTime(), true)
 		},
 		Telemetry: f.telemetry,

@@ -22,6 +22,44 @@ server:
   # The header to use for the proxy header. This is the header that will be used to determine the IP address of the client
   proxy_header: "X-Forwarded-For"
 
+  # Configuration related to access logging for the server
+  access_log:
+
+    # Given the nature of how requests are designed to hang by this service
+    # there are a number of different ways to log requests. The following are the available modes
+    #  - end: Logs the request after the request has been completed
+    #  - start: Logs the request as soon as the request is received
+    #  - both: Logs the request at both the start and the end of the request
+    #  - none: Disables access logging
+    mode: "end"
+
+    # The path to write the access log to. If this is not specified then the access log will be written to stdout
+    path: ""
+
+    # Comma deliminated list of fields to log. The following fields are available:
+    #   - id: UUIDv4 generated for the request
+    #   - timestamp: The time the request was received in RFC3339 format
+    #   - status: The status code of the request
+    #   - src_ip: The ip of the connecting client
+    #   - method: The HTTP method of the request
+    #   - path: The path of the request
+    #   - qs: The query string of the request
+    #   - dest_port: The port the request was sent to
+    #   - type: The type of request (Always http)
+    #   - host: The host of the request
+    #   - user_agent: The user agent of the client
+    #   - browser: The browser of the client (Inferred from the user agent)
+    #   - browser_version: The version of the browser (Inferred from the user agent)
+    #   - os: The operating system of the client (Inferred from the user agent)
+    #   - os_version: The version of the operating system (Inferred from the user agent)
+    #   - device: The device of the client (Inferred from the user agent)
+    #   - device_brand: The type of device of the client (Inferred from the user agent)
+    #   - phase: "start" or "end" depending on the phase of the request
+    #   - duration: The duration of the request in milliseconds (Only available as a part of the end phase of a request)
+    fields: "src_ip,method,path,qs,duration"
+
+
+
   
 
 # Configuration for logging related settings for go-pot

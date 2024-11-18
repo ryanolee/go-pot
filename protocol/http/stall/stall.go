@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/ryanolee/ryan-pot/generator"
 	"github.com/ryanolee/ryan-pot/core/metrics"
 	"github.com/ryanolee/ryan-pot/core/stall"
+	"github.com/ryanolee/ryan-pot/generator"
 	"go.uber.org/zap"
 )
 
@@ -105,7 +105,7 @@ func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
 		closeContext, cancelContext := context.WithTimeout(closeContext, s.timeout)
 
 		err := s.writeDataToClient(w, s.generator.Start())
-		if err != nil{
+		if err != nil {
 			logger.Error("Failed first write!", "connId", s.id, "err", err)
 			s.handleTimeout()
 			s.Halt()
@@ -162,7 +162,6 @@ func (s *HttpStaller) PushDataToClient(ctx context.Context, w *bufio.Writer, dat
 				return false, err
 			}
 
-			
 		case <-s.telemetryTicker.C:
 			if s.telemetry == nil {
 				continue
@@ -246,7 +245,6 @@ func (s *HttpStaller) GetGroupIdentifier() string {
 func (s *HttpStaller) GetIdentifier() uint64 {
 	return s.id
 }
-
 
 func (s *HttpStaller) setRunning(running bool) {
 	s.runningLock.Lock()

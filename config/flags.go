@@ -3,6 +3,7 @@ package config
 import (
 	"maps"
 	"os"
+	"strings"
 
 	"github.com/knadh/koanf/v2"
 	"github.com/spf13/cobra"
@@ -102,6 +103,27 @@ var httpFlags = flagMap{
 		description:  "The network stack to use (tcp, tcp4, tcp6).",
 		configType:   "string",
 		defaultValue: defaultConfig.Server.Network,
+	},
+	"http-access-log-mode": {
+		flagName:     "http-access-log-mode",
+		configKey:    "server.access_log.mode",
+		description:  "The mode to log requests in. Options: start (start of the request), end (end of the request), both (both start and end of the request), none (no logging).",
+		configType:   "string",
+		defaultValue: defaultConfig.Server.AccessLog.Path,
+	},
+	"http-access-log-path": {
+		flagName:     "http-access-log-path",
+		configKey:    "server.access_log.path",
+		description:  "The path to write the http access log to. (If not set, logs will be written to stdout.)",
+		configType:   "string",
+		defaultValue: defaultConfig.Server.AccessLog.Path,
+	},
+	"http-access-log-fields": {
+		flagName:     "http-access-log-fields",
+		configKey:    "server.access_log.fields_to_log",
+		description:  "The fields to log in the http access log as comma separated values. (Lookup documentation for available fields.)",
+		configType:   "string",
+		defaultValue: strings.Join(defaultConfig.Server.AccessLog.FieldsToLog, ","),
 	},
 	"cluster-mode-enabled": {
 		flagName:     "cluster-mode-enabled",

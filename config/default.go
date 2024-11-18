@@ -11,6 +11,16 @@ var defaultConfig = Config{
 		Network:        "tcp4",
 		ProxyHeader:    "X-Forwarded-For",
 		TrustedProxies: []string{},
+		AccessLog: accessLogConfig{
+			Mode: "end",
+			FieldsToLog: []string{
+				"src_ip",
+				"method",
+				"path",
+				"qs",
+				"duration",
+			},
+		},
 	},
 	FtpServer: ftpServerConfig{
 		Enabled:          false,
@@ -29,7 +39,8 @@ var defaultConfig = Config{
 		},
 	},
 	Logging: loggingConfig{
-		Level: zapcore.InfoLevel.String(),
+		Level:             zapcore.InfoLevel.String(),
+		StartUpLogEnabled: true,
 	},
 	Cluster: clusterConfig{
 		Enabled:            false,
@@ -95,7 +106,7 @@ var defaultConfig = Config{
 	},
 	Staller: stallerConfig{
 		MaximumConnections: 200,
-		GroupLimit:         1,
+		GroupLimit:         50,
 		BytesPerSecond:     8,
 	},
 }

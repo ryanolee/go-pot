@@ -53,6 +53,7 @@ require (
 	github.com/aws/smithy-go v1.16.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fclairamb/go-log v0.5.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -67,7 +68,7 @@ require (
 	github.com/hashicorp/go-msgpack v0.5.3 // indirect
 	github.com/hashicorp/go-multierror v1.0.0 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.0 // indirect
-	github.com/hashicorp/golang-lru v0.5.0 // indirect
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
@@ -86,6 +87,7 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/ua-parser/uap-go v0.0.0-20241012191800-bbb40edc15aa // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.54.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect

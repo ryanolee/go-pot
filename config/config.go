@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/knadh/koanf/providers/env"
@@ -43,6 +42,9 @@ type (
 		// The list of trusted proxies to use if the application is behind a proxy
 		// Must be a list of IP addresses or CIDR ranges
 		TrustedProxies []string `koanf:"trusted_proxies" validate:"omitempty,dive,ipv4|ipv6|cidr|cidrv6"`
+
+		// Enable access logs
+		AccessLog accessLogConfig `koanf:"access_log"`
 	}
 
 	// Config relating to FTP Server File Transfer
@@ -126,6 +128,25 @@ type (
 	loggingConfig struct {
 		// Logging level
 		Level string `koanf:"level"`
+
+		// If the startup log is enabled
+		StartUpLogEnabled bool `koanf:"startup_log_enabled"`
+	}
+
+	accessLogConfig struct {
+		// The path to write the access logs to (Otherwise stdout)
+		Path string `koanf:"path" validate:"omitempty"`
+
+		// The format to write the access logs in given sometimes requests can take a very long time
+		// to resolve by design. The following modes are available:
+		//    - Start: Only log the start of the request
+		//    - End: Only log the end of the request
+		//    - Both: Log both the start and end of the request (Each request will be logged twice)
+		//    - None: Do not log any requests
+		Mode string `koanf:"mode" validate:"omitempty,oneof=start end both none"`
+
+		// The fields to log in the access logs (Note that not all fields are aviailable for all protocols and will be omitted if not present)
+		FieldsToLog []string `koanf:"fields_to_log" validate:"omitempty,dive,oneof=timestamp status src_ip method path qs dest_port type host user_agent browser browser_version os os_version device device_brand phase duration id"`
 	}
 
 	// Timeout watcher specific configuration
@@ -285,7 +306,6 @@ func NewConfig(cmd *cobra.Command, flagsUsed flagMap) (*Config, error) {
 	err := k.Load(env.ProviderWithValue("GOPOT__", ".", func(s string, v string) (string, interface{}) {
 		key := strings.Replace(strings.ToLower(strings.TrimPrefix(s, "GOPOT__")), "__", ".", -1)
 		if v == "true" || v == "false" {
-			fmt.Println(key, v == "true")
 			return key, v == "true"
 		}
 
@@ -299,6 +319,7 @@ func NewConfig(cmd *cobra.Command, flagsUsed flagMap) (*Config, error) {
 	// Handle special cases
 	setStringSlice(k, "cluster.known_peer_ips")
 	setStringSlice(k, "server.trusted_proxies")
+	setStringSlice(k, "server.access_log.fields_to_log")
 
 	var cfg *Config
 	if err := k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "koanf"}); err != nil {
@@ -315,7 +336,14 @@ func NewConfig(cmd *cobra.Command, flagsUsed flagMap) (*Config, error) {
 
 // Sets the value of a string slice if the value is not empty
 func setStringSlice(k *koanf.Koanf, key string) {
+	// If we already have a slice value then we don't need to do anything
+	sliceVal := k.Strings(key)
+	if len(sliceVal) > 0 {
+		return
+	}
+
 	stringVal := k.String(key)
+
 	if stringVal != "" && stringVal != "[]" {
 		k.Set(key, strings.Split(k.String(key), ","))
 	} else {
