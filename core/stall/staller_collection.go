@@ -18,7 +18,8 @@ type StallerCollection struct {
 
 func NewStallerCollection(groupLimit int) *StallerCollection {
 	return &StallerCollection{
-		stallers: make(map[string]map[uint64]Staller),
+		groupLimit: groupLimit,
+		stallers:   make(map[string]map[uint64]Staller),
 	}
 }
 

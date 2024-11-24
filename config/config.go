@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/knadh/koanf/providers/env"
@@ -43,6 +42,9 @@ type (
 		// The list of trusted proxies to use if the application is behind a proxy
 		// Must be a list of IP addresses or CIDR ranges
 		TrustedProxies []string `koanf:"trusted_proxies" validate:"omitempty,dive,ipv4|ipv6|cidr|cidrv6"`
+
+		// Enable access logs
+		AccessLog httpAccessLogConfig `koanf:"access_log"`
 	}
 
 	// Config relating to FTP Server File Transfer
@@ -86,8 +88,24 @@ type (
 		// Commands relating to throttling ongoing connections to the ftp server
 		Throttle ftpThrottleConfig `koanf:"throttle"`
 
-		//
+		// Ftp Transfer Configuration
 		Transfer ftpTransferConfig `koanf:"transfer"`
+
+		// Command logging configuration
+		CommandLog ftpCommandLogConfig `koanf:"command_log"`
+	}
+
+	ftpCommandLogConfig struct {
+		// The path to write the access logs to (Otherwise stdout)
+		Path string `koanf:"path" validate:"omitempty"`
+
+		// A list of commands to log against each command from the FTP server Context (All commands are logged by default)
+		// Note that thease commands are based on calls to an internal emulated filesystem and not the actual FTP commands
+		// meaning that though the commands are similar they are not a 1 to 1 mapping ith the FTP protocol
+		CommandsToLog []string `koanf:"commands_to_log" validate:"omitempty,dive,oneof=all all_detailed create_file create_directory create_directory_recursive open open_file remove remove_all rename stat chown chtimes close_file read_file read_file_at seek_file write_file write_file_at read_dir read_dir_names stat sync truncate write_string client_connected client_disconnected auth_user none"`
+
+		// Additional fields to log against each command from the FTP server Context
+		AdditionalFields []string `koanf:"additional_fields" validate:"omitempty,dive,oneof=id dest_addr src_addr client_version type dest_port src_port src_host dest_host none"`
 	}
 
 	// Cluster specific configuration
@@ -126,6 +144,28 @@ type (
 	loggingConfig struct {
 		// Logging level
 		Level string `koanf:"level"`
+
+		// If the startup log is enabled
+		StartUpLogEnabled bool `koanf:"startup_log_enabled"`
+
+		// Sets global log path for protocol specific logs
+		Path string `koanf:"path"`
+	}
+
+	httpAccessLogConfig struct {
+		// The path to write the access logs to (Otherwise stdout)
+		Path string `koanf:"path" validate:"omitempty"`
+
+		// The format to write the access logs in given sometimes requests can take a very long time
+		// to resolve by design. The following modes are available:
+		//    - Start: Only log the start of the request
+		//    - End: Only log the end of the request
+		//    - Both: Log both the start and end of the request (Each request will be logged twice)
+		//    - None: Do not log any requests
+		Mode string `koanf:"mode" validate:"omitempty,oneof=start end both none"`
+
+		// The fields to log in the access logs (Note that not all fields are aviailable for all protocols and will be omitted if not present)
+		FieldsToLog []string `koanf:"fields_to_log" validate:"omitempty,dive,oneof=timestamp status src_ip method path qs dest_port type host user_agent browser browser_version os os_version device device_brand phase duration id"`
 	}
 
 	// Timeout watcher specific configuration
@@ -285,7 +325,6 @@ func NewConfig(cmd *cobra.Command, flagsUsed flagMap) (*Config, error) {
 	err := k.Load(env.ProviderWithValue("GOPOT__", ".", func(s string, v string) (string, interface{}) {
 		key := strings.Replace(strings.ToLower(strings.TrimPrefix(s, "GOPOT__")), "__", ".", -1)
 		if v == "true" || v == "false" {
-			fmt.Println(key, v == "true")
 			return key, v == "true"
 		}
 
@@ -299,6 +338,9 @@ func NewConfig(cmd *cobra.Command, flagsUsed flagMap) (*Config, error) {
 	// Handle special cases
 	setStringSlice(k, "cluster.known_peer_ips")
 	setStringSlice(k, "server.trusted_proxies")
+	setStringSlice(k, "server.access_log.fields_to_log")
+	setStringSlice(k, "ftp_server.command_log.commands_to_log")
+	setStringSlice(k, "ftp_server.command_log.additional_fields")
 
 	var cfg *Config
 	if err := k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "koanf"}); err != nil {
@@ -315,7 +357,14 @@ func NewConfig(cmd *cobra.Command, flagsUsed flagMap) (*Config, error) {
 
 // Sets the value of a string slice if the value is not empty
 func setStringSlice(k *koanf.Koanf, key string) {
+	// If we already have a slice value then we don't need to do anything
+	sliceVal := k.Strings(key)
+	if len(sliceVal) > 0 {
+		return
+	}
+
 	stringVal := k.String(key)
+
 	if stringVal != "" && stringVal != "[]" {
 		k.Set(key, strings.Split(k.String(key), ","))
 	} else {

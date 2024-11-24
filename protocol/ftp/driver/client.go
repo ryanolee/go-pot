@@ -8,6 +8,7 @@ import (
 	ftpserver "github.com/fclairamb/ftpserverlib"
 	"github.com/ryanolee/ryan-pot/generator/filesystem"
 	"github.com/ryanolee/ryan-pot/protocol/ftp/di"
+	"github.com/ryanolee/ryan-pot/protocol/ftp/logging"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -20,6 +21,7 @@ type FtpClientDriver struct {
 	ctx       ftpserver.ClientContext
 	generator *filesystem.FilesystemGenerator
 	repo      *di.FtpRepository
+	logger    logging.CommandLogger
 }
 
 func NewFtpClientDriver(id *int64, ctx ftpserver.ClientContext, repo *di.FtpRepository) *FtpClientDriver {
@@ -29,22 +31,23 @@ func NewFtpClientDriver(id *int64, ctx ftpserver.ClientContext, repo *di.FtpRepo
 		ctx:       ctx,
 		generator: filesystem.NewFilesystemGenerator(*id),
 		repo:      repo,
+		logger:    repo.GetLogger().WithContext(ctx),
 	}
 }
 
 func (f *FtpClientDriver) Create(name string) (afero.File, error) {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.Create", name)
+	f.logger.Log("create_file", zap.String("path", name))
 	err := f.waitForThrottle()
 	if err != nil {
 		return nil, err
 	}
 
-	return NewFtpFile(name, f.generator, f.ctx, f.repo), nil
+	return NewFtpFile(name, f.generator, f.ctx, f.repo, f.logger), nil
 }
 
 func (f *FtpClientDriver) Mkdir(name string, perm os.FileMode) error {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.Mkdir", name, perm)
-	zap.L().Sugar().Infow("Create Directory", "name", name, "perm", perm)
+	f.logger.Log("create_directory", zap.String("path", name), zap.String("perm", perm.String()))
+
 	err := f.waitForThrottle()
 	if err != nil {
 		return err
@@ -54,7 +57,7 @@ func (f *FtpClientDriver) Mkdir(name string, perm os.FileMode) error {
 }
 
 func (f *FtpClientDriver) MkdirAll(path string, perm os.FileMode) error {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.MkdirAll", path, perm)
+	f.logger.Log("create_directory_recursive", zap.String("path", path), zap.String("perm", perm.String()))
 	err := f.waitForThrottle()
 	if err != nil {
 		return err
@@ -64,30 +67,27 @@ func (f *FtpClientDriver) MkdirAll(path string, perm os.FileMode) error {
 }
 
 func (f *FtpClientDriver) Open(name string) (afero.File, error) {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.Open", name)
-	zap.L().Sugar().Infow("Open", "name", name)
+	f.logger.Log("open", zap.String("path", name))
 	err := f.waitForThrottle()
 	if err != nil {
 		return nil, err
 	}
 
-	return NewFtpFile(name, f.generator, f.ctx, f.repo), nil
+	return NewFtpFile(name, f.generator, f.ctx, f.repo, f.logger), nil
 }
 
 func (f *FtpClientDriver) OpenFile(name string, flag int, perm os.FileMode) (afero.File, error) {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.OpenFile", name, flag, perm)
-	zap.L().Sugar().Infow("Open File", "name", name, "flag", flag, "perm", perm)
+	f.logger.Log("open_file", zap.String("path", name), zap.Int("flag", flag), zap.String("perm", perm.String()))
 	err := f.waitForThrottle()
 	if err != nil {
 		return nil, err
 	}
 
-	return NewFtpFile(name, f.generator, f.ctx, f.repo), nil
+	return NewFtpFile(name, f.generator, f.ctx, f.repo, f.logger), nil
 }
 
 func (f *FtpClientDriver) Remove(name string) error {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.Remove", name)
-	zap.L().Sugar().Infow("Remove", "name", name)
+	f.logger.Log("remove", zap.String("path", name))
 
 	err := f.waitForThrottle()
 	if err != nil {
@@ -98,8 +98,7 @@ func (f *FtpClientDriver) Remove(name string) error {
 }
 
 func (f *FtpClientDriver) RemoveAll(path string) error {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.RemoveAll", path)
-	zap.L().Sugar().Infow("Remove All", "path", path)
+	f.logger.Log("remove_all", zap.String("path", path))
 	err := f.waitForThrottle()
 	if err != nil {
 		return err
@@ -109,8 +108,7 @@ func (f *FtpClientDriver) RemoveAll(path string) error {
 }
 
 func (f *FtpClientDriver) Rename(oldname, newname string) error {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.Rename", oldname, newname)
-	zap.L().Sugar().Infow("Rename", "oldname", oldname, "newname", newname)
+	f.logger.Log("rename", zap.String("path", oldname), zap.String("new_path", newname))
 	err := f.waitForThrottle()
 	if err != nil {
 		return err
@@ -119,9 +117,9 @@ func (f *FtpClientDriver) Rename(oldname, newname string) error {
 }
 
 func (f *FtpClientDriver) Stat(name string) (os.FileInfo, error) {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.Stat", name)
-
 	err := f.waitForThrottle()
+	f.logger.Log("stat", zap.String("path", name))
+
 	if err != nil {
 		return nil, err
 	}
@@ -132,8 +130,6 @@ func (f *FtpClientDriver) Stat(name string) (os.FileInfo, error) {
 }
 
 func (f *FtpClientDriver) Name() string {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.Name")
-
 	err := f.waitForThrottle()
 	if err != nil {
 		return ""
@@ -143,8 +139,8 @@ func (f *FtpClientDriver) Name() string {
 }
 
 func (f *FtpClientDriver) Chmod(name string, mode os.FileMode) error {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.Chmod", name, mode)
 	err := f.waitForThrottle()
+	f.logger.Log("chmod", zap.String("path", name), zap.String("mode", mode.String()))
 	if err != nil {
 		return err
 	}
@@ -152,8 +148,8 @@ func (f *FtpClientDriver) Chmod(name string, mode os.FileMode) error {
 }
 
 func (f *FtpClientDriver) Chown(name string, uid, gid int) error {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.Chown", name, uid, gid)
 	err := f.waitForThrottle()
+	f.logger.Log("chown", zap.String("path", name), zap.Int("uid", uid), zap.Int("gid", gid))
 	if err != nil {
 		return err
 	}
@@ -161,8 +157,8 @@ func (f *FtpClientDriver) Chown(name string, uid, gid int) error {
 }
 
 func (f *FtpClientDriver) Chtimes(name string, atime time.Time, mtime time.Time) error {
-	zap.L().Sugar().Debug("__STUB__  FtpClientDriver.Chtimes", name, atime, mtime)
 	err := f.waitForThrottle()
+	f.logger.Log("chtimes", zap.String("path", name), zap.Time("atime", atime), zap.Time("mtime", mtime))
 	if err != nil {
 		return err
 	}

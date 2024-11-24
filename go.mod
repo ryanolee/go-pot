@@ -12,6 +12,7 @@ require (
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/gofiber/contrib/fiberzap/v2 v2.1.1
 	github.com/gofiber/fiber/v2 v2.49.2
+	github.com/google/uuid v1.4.0
 	github.com/hashicorp/hcl/v2 v2.19.1
 	github.com/hashicorp/memberlist v0.5.0
 	github.com/knadh/koanf/parsers/yaml v0.1.0
@@ -26,6 +27,7 @@ require (
 	github.com/spf13/afero v1.11.0
 	github.com/spf13/cobra v1.7.0
 	github.com/thoas/go-funk v0.9.3
+	github.com/ua-parser/uap-go v0.0.0-20241012191800-bbb40edc15aa
 	github.com/zclconf/go-cty v1.13.0
 	go.uber.org/fx v1.20.1
 	go.uber.org/zap v1.27.0
@@ -61,13 +63,12 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/uuid v1.4.0 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.0.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.3 // indirect
 	github.com/hashicorp/go-multierror v1.0.0 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.0 // indirect
-	github.com/hashicorp/golang-lru v0.5.0 // indirect
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect

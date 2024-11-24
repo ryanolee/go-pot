@@ -11,6 +11,16 @@ var defaultConfig = Config{
 		Network:        "tcp4",
 		ProxyHeader:    "X-Forwarded-For",
 		TrustedProxies: []string{},
+		AccessLog: httpAccessLogConfig{
+			Mode: "end",
+			FieldsToLog: []string{
+				"src_ip",
+				"method",
+				"path",
+				"qs",
+				"duration",
+			},
+		},
 	},
 	FtpServer: ftpServerConfig{
 		Enabled:          false,
@@ -27,9 +37,18 @@ var defaultConfig = Config{
 			ChunkSendRate: 1000,
 			FileSize:      1024 * 1024 * 20, // 20Mb
 		},
+		CommandLog: ftpCommandLogConfig{
+			CommandsToLog: []string{
+				"all",
+			},
+			AdditionalFields: []string{
+				"id",
+			},
+		},
 	},
 	Logging: loggingConfig{
-		Level: zapcore.InfoLevel.String(),
+		Level:             zapcore.InfoLevel.String(),
+		StartUpLogEnabled: true,
 	},
 	Cluster: clusterConfig{
 		Enabled:            false,
@@ -95,7 +114,7 @@ var defaultConfig = Config{
 	},
 	Staller: stallerConfig{
 		MaximumConnections: 200,
-		GroupLimit:         1,
+		GroupLimit:         50,
 		BytesPerSecond:     8,
 	},
 }

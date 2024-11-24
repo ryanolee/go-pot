@@ -6,6 +6,7 @@ import (
 
 	ftpserver "github.com/fclairamb/ftpserverlib"
 	"github.com/ryanolee/ryan-pot/config"
+	"github.com/ryanolee/ryan-pot/protocol/ftp/logging"
 	"github.com/ryanolee/ryan-pot/protocol/ftp/throttle"
 	"go.uber.org/zap"
 )
@@ -18,9 +19,10 @@ type FtpServerDriver struct {
 	settings      *ftpserver.Settings
 	tlsConfig     *tls.Config
 	throttle      *throttle.FtpThrottle
+	logger        *logging.FtpCommandLogger
 }
 
-func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory, throttle *throttle.FtpThrottle) (*FtpServerDriver, error) {
+func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory, throttle *throttle.FtpThrottle, logger *logging.FtpCommandLogger) (*FtpServerDriver, error) {
 	cert, err := getSelfSignedCert(c)
 	if err != nil {
 		return nil, err
@@ -34,6 +36,7 @@ func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory, throttle *
 	return &FtpServerDriver{
 		clientFactory: cf,
 		throttle:      throttle,
+		logger:        logger,
 		tlsConfig: &tls.Config{
 			Certificates: []tls.Certificate{
 				cert,
@@ -67,31 +70,32 @@ func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory, throttle *
 }
 
 func (f *FtpServerDriver) GetSettings() (*ftpserver.Settings, error) {
-	zap.L().Sugar().Debug("__STUB__  FtpServerDriver.GetSettings")
 	return f.settings, nil
 }
 
 func (f *FtpServerDriver) ClientConnected(cc ftpserver.ClientContext) (string, error) {
-	zap.L().Sugar().Debug("__STUB__  FtpServerDriver.ClientConnected", cc)
-	zap.L().Sugar().Infow("Client connected", "client", cc.RemoteAddr(), "id", cc.ID())
+	f.logger.LogWithContext(cc, "client_connected")
 	return "Welcome to the FTP Server", nil
 }
 
 func (f *FtpServerDriver) ClientDisconnected(cc ftpserver.ClientContext) {
-	zap.L().Sugar().Debug("__STUB__  FtpServerDriver.ClientDisconnected", cc)
-	zap.L().Sugar().Infow("Client Disconnected", "client", cc.RemoteAddr(), "id", cc.ID())
+	f.logger.LogWithContext(cc, "client_disconnected")
 	clientId := f.clientFactory.GetClientIdFromContent(cc)
 	f.throttle.Unregister(clientId)
 	return
 }
 
 func (f *FtpServerDriver) AuthUser(cc ftpserver.ClientContext, user, pass string) (ftpserver.ClientDriver, error) {
-	zap.L().Sugar().Debug("__STUB__  FtpServerDriver.AuthUser", cc, user, pass)
-	zap.L().Sugar().Infow("Client Authenticating with", "client", cc.RemoteAddr(), "id", cc.ID(), "user", user, "pass", pass)
+	f.logger.LogWithContext(cc, "auth_user",
+		zap.String("user", user),
+		zap.String("pass", pass),
+		zap.String("client_version", cc.GetClientVersion()),
+		zap.String("client_ip", cc.RemoteAddr().String()),
+	)
+
 	return f.clientFactory.FromContext(cc), nil
 }
 
 func (f *FtpServerDriver) GetTLSConfig() (*tls.Config, error) {
-	zap.L().Sugar().Debug("__STUB__  FtpServerDriver.GetTLSConfig")
 	return f.tlsConfig, nil
 }

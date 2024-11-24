@@ -3,6 +3,7 @@ package config
 import (
 	"maps"
 	"os"
+	"strings"
 
 	"github.com/knadh/koanf/v2"
 	"github.com/spf13/cobra"
@@ -78,6 +79,13 @@ var commonFlags = flagMap{
 		configType:   "int",
 		defaultValue: defaultConfig.Staller.MaximumConnections,
 	},
+	"log-path": {
+		flagName:     "log-path",
+		configKey:    "logging.path",
+		description:  "The path to write the log to. (If not set, logs will be written to stdout.)",
+		configType:   "string",
+		defaultValue: defaultConfig.Logging.Path,
+	},
 }
 
 var httpFlags = flagMap{
@@ -102,6 +110,27 @@ var httpFlags = flagMap{
 		description:  "The network stack to use (tcp, tcp4, tcp6).",
 		configType:   "string",
 		defaultValue: defaultConfig.Server.Network,
+	},
+	"http-access-log-mode": {
+		flagName:     "http-access-log-mode",
+		configKey:    "server.access_log.mode",
+		description:  "The mode to log requests in. Options: start (start of the request), end (end of the request), both (both start and end of the request), none (no logging).",
+		configType:   "string",
+		defaultValue: defaultConfig.Server.AccessLog.Path,
+	},
+	"http-access-log-path": {
+		flagName:     "http-access-log-path",
+		configKey:    "server.access_log.path",
+		description:  "The path to write the http access log to. (If not set, logs will be written to stdout.)",
+		configType:   "string",
+		defaultValue: defaultConfig.Server.AccessLog.Path,
+	},
+	"http-access-log-fields": {
+		flagName:     "http-access-log-fields",
+		configKey:    "server.access_log.fields_to_log",
+		description:  "The fields to log in the http access log as comma separated values. (Lookup documentation for available fields.)",
+		configType:   "string",
+		defaultValue: strings.Join(defaultConfig.Server.AccessLog.FieldsToLog, ","),
 	},
 	"cluster-mode-enabled": {
 		flagName:     "cluster-mode-enabled",
@@ -168,6 +197,27 @@ var ftpFlags = flagMap{
 		description:  "The range of passive ports to use for FTP data connections. (in the format of 'start-end')",
 		configType:   "string",
 		defaultValue: defaultConfig.FtpServer.PassivePortRange,
+	},
+	"ftp-log-path": {
+		flagName:     "ftp-log-path",
+		configKey:    "ftp_server.command_log.path",
+		description:  "The path to write the ftp command log to. (If not set, logs will be written to stdout.)",
+		configType:   "string",
+		defaultValue: defaultConfig.FtpServer.CommandLog.Path,
+	},
+	"ftp-log-commands": {
+		flagName:     "ftp-log-commands",
+		configKey:    "ftp_server.command_log.commands_to_log",
+		description:  "The commands to log in the ftp command log as comma separated values. (Lookup documentation for available commands.)",
+		configType:   "string",
+		defaultValue: strings.Join(defaultConfig.FtpServer.CommandLog.CommandsToLog, ","),
+	},
+	"ftp-log-fields": {
+		flagName:     "ftp-log-fields",
+		configKey:    "ftp_server.command_log.additional_fields",
+		description:  "The additional fields to log in each line of the FTP log. (Lookup documentation for available fields.)",
+		configType:   "string",
+		defaultValue: strings.Join(defaultConfig.FtpServer.CommandLog.AdditionalFields, ","),
 	},
 }
 

@@ -9,6 +9,7 @@ import (
 	ftpserver "github.com/fclairamb/ftpserverlib"
 	"github.com/ryanolee/ryan-pot/generator/filesystem"
 	"github.com/ryanolee/ryan-pot/protocol/ftp/di"
+	"github.com/ryanolee/ryan-pot/protocol/ftp/logging"
 	ftpStall "github.com/ryanolee/ryan-pot/protocol/ftp/stall"
 
 	"go.uber.org/zap"
@@ -27,6 +28,9 @@ type FtpFile struct {
 	gen *filesystem.FilesystemGenerator
 	ctx ftpserver.ClientContext
 
+	// Logger
+	logger logging.CommandLogger
+
 	// Config
 	transferChunkSize int
 	transferDelay     time.Duration
@@ -35,7 +39,7 @@ type FtpFile struct {
 
 var crc64Table = crc64.MakeTable(crc64.ISO)
 
-func NewFtpFile(name string, gen *filesystem.FilesystemGenerator, ctx ftpserver.ClientContext, repo *di.FtpRepository) *FtpFile {
+func NewFtpFile(name string, gen *filesystem.FilesystemGenerator, ctx ftpserver.ClientContext, repo *di.FtpRepository, logger logging.CommandLogger) *FtpFile {
 	fileSize := repo.GetConfig().FtpServer.Transfer.FileSize
 	return &FtpFile{
 		name:              name,
@@ -46,48 +50,48 @@ func NewFtpFile(name string, gen *filesystem.FilesystemGenerator, ctx ftpserver.
 		transferChunkSize: repo.GetConfig().FtpServer.Transfer.ChunkSize,
 		transferDelay:     time.Duration(repo.GetConfig().FtpServer.Transfer.ChunkSendRate) * time.Millisecond,
 		fileSize:          fileSize,
+		logger:            logger,
 	}
 }
 
 func (f *FtpFile) Close() error {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.Close")
+	f.logger.Log("close_file", zap.String("path", f.name))
 	f.stall.Halt()
 	return nil
 }
 
 func (f *FtpFile) Read(p []byte) (n int, err error) {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.Read", f.fileSize)
+	f.logger.Log("read_file", zap.String("path", f.name), zap.Int("data_requested", len(p)))
 	time.Sleep(f.transferDelay)
 	return f.stall.Read(p)
 }
 
 func (f *FtpFile) ReadAt(p []byte, off int64) (n int, err error) {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.ReadAt", off)
+	f.logger.Log("read_file_at", zap.String("path", f.name), zap.Int64("offset", off), zap.Int("data_requested", len(p)))
 	return 0, io.EOF
 }
 
 func (f *FtpFile) Seek(offset int64, whence int) (int64, error) {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.Seek", offset, whence)
+	f.logger.Log("seek_file", zap.String("path", f.name), zap.Int64("offset", offset), zap.Int("whence", whence))
 	return 0, nil
 }
 
 func (f *FtpFile) Write(p []byte) (n int, err error) {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.Write", p)
+	f.logger.Log("write_file", zap.String("path", f.name), zap.Int("data_written", len(p)))
 	return 0, nil
 }
 
 func (f *FtpFile) WriteAt(p []byte, off int64) (n int, err error) {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.WriteAt", p, off)
+	f.logger.Log("write_file_at", zap.String("path", f.name), zap.Int64("offset", off), zap.Int("data_written", len(p)))
 	return 0, nil
 }
 
 func (f *FtpFile) Name() string {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.Name")
 	return f.name
 }
 
 func (f *FtpFile) Readdir(count int) ([]os.FileInfo, error) {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.Readdir", count)
+	f.logger.Log("read_dir", zap.String("path", f.name))
 
 	f.resetGenerator()
 	files := f.gen.Generate()
@@ -100,27 +104,27 @@ func (f *FtpFile) Readdir(count int) ([]os.FileInfo, error) {
 }
 
 func (f *FtpFile) Readdirnames(n int) ([]string, error) {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.Readdirnames", n)
+	f.logger.Log("read_dir_names", zap.String("path", f.name))
 	return nil, nil
 }
 
 func (f *FtpFile) Stat() (os.FileInfo, error) {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.Stat")
+	f.logger.Log("stat", zap.String("path", f.name))
 	return &FtpFileInfo{}, nil
 }
 
 func (f *FtpFile) Sync() error {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.Sync")
+	f.logger.Log("sync", zap.String("path", f.name))
 	return nil
 }
 
 func (f *FtpFile) Truncate(size int64) error {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.Truncate", size)
+	f.logger.Log("truncate", zap.String("path", f.name), zap.Int64("size", size))
 	return nil
 }
 
 func (f *FtpFile) WriteString(s string) (ret int, err error) {
-	zap.L().Sugar().Debug("__STUB__  FtpFile.WriteString", s)
+	f.logger.Log("write_string", zap.String("path", f.name), zap.Int("data_written", len(s)))
 	return 0, nil
 }
 

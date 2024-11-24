@@ -22,12 +22,53 @@ server:
   # The header to use for the proxy header. This is the header that will be used to determine the IP address of the client
   proxy_header: "X-Forwarded-For"
 
-  
+  # Configuration related to access logging for the server
+  access_log:
+
+    # Given the nature of how requests are designed to hang by this service
+    # there are a number of different ways to log requests. The following are the available modes
+    #  - end: Logs the request after the request has been completed
+    #  - start: Logs the request as soon as the request is received
+    #  - both: Logs the request at both the start and the end of the request
+    #  - none: Disables access logging
+    mode: "end"
+
+    # The path to write the access log to. If this is not specified then the access log will be written to stdout
+    path: ""
+
+    # Comma deliminated list of fields to log. The following fields are available:
+    #   - id: UUIDv4 generated for the request
+    #   - timestamp: The time the request was received in RFC3339 format
+    #   - status: The status code of the request
+    #   - src_ip: The ip of the connecting client
+    #   - method: The HTTP method of the request
+    #   - path: The path of the request
+    #   - qs: The query string of the request
+    #   - dest_port: The port the request was sent to
+    #   - type: The type of request (Always http)
+    #   - host: The host of the request
+    #   - user_agent: The user agent of the client
+    #   - browser: The browser of the client (Inferred from the user agent)
+    #   - browser_version: The version of the browser (Inferred from the user agent)
+    #   - os: The operating system of the client (Inferred from the user agent)
+    #   - os_version: The version of the operating system (Inferred from the user agent)
+    #   - device: The device of the client (Inferred from the user agent)
+    #   - device_brand: The type of device of the client (Inferred from the user agent)
+    #   - phase: "start" or "end" depending on the phase of the request
+    #   - duration: The duration of the request in milliseconds (Only available as a part of the end phase of a request)
+    fields: "src_ip,method,path,qs,duration"
 
 # Configuration for logging related settings for go-pot
 logging:
   # One of: debug, info, warn, error, dpanic, panic, fatal
   level: info
+
+  # The path to write protocol specific logs to. If this is not specified then the log will be written to stdout
+  # note that this will be overridden by protocol specific log paths
+  path: ""
+
+  # If the startup log should be enabled. This log is not written to the access log
+  startup_log_enabled: true
 
 # Clustering related settings for go-pot
 cluster:
@@ -214,6 +255,53 @@ ftp_server:
     # The file size in bytes (20 MB by default)
     file_size: 20971520
 
+  # Logging configuration for the FTP server
+  logging:
+    # The path to write the command log to. If this is not specified then the command log will be written to stdout
+    path: ""
 
+    # Comma delimitated commands to log (No spaces). Please note that commands to not 1 to 1 map to FTP commands 
+    # but relate to internal commands made to the "fake" filesystem the FTP client exposes.
+    # The following commands are available:
+    # - all: Logs all commands (Except for commands that are called often)
+    # - all_detailed: Logs all commands (Including commands that are called often)
+    # - create_file: Logs when a file is created including the file name as "path"
+    # - create_directory: Logs when a directory is created including the directory name as "path" and the permissions as "perm"
+    # - create_directory_recursive: Logs when a directory is created recursively including the directory name as "path"  and the permissions as "perm"
+    # - open: Called when a resource is opened includes the resource name as "path"
+    # - open_file: Called when a file is opened includes the file name as "path"
+    # - remove: Called when a resource is removed includes the resource name as "path"
+    # - remove_all: Called when a resource is removed recursively includes the resource name as "path"
+    # - rename: Called when a resource is renamed includes the resource name as "path" and the new name as "new_path"
+    # - stat: Called when a resource status is checked includes the resource name as "path"
+    # - chown: Called when a resource owner is changed includes the resource name as "path" and the new owner id as "uid" and the owner group id as "gid"
+    # - chtimes: Called when a resource time is changed includes the resource name as "path" and the new times as "atime" (Access time) and "mtime" (Modified time)
+    # - close_file: Called when a file is closed includes the file name as "path"
+    # - read_file: [Called often!] Called when a file is read includes the file name as "path" and the number of bytes requested as "data_requested"
+    # - read_file_at: [Called often!] Called when a file is read at a specific location includes the file name as "path" and the number of bytes requested as "data_requested" and the offset as "offset"
+    # - seek_file: Called when a file is seeked includes the file name as "path" and the offset as "offset" and the where to read to as "whence"
+    # - write_file: [Called often!] Called when a file is written to includes the file name as "path" and the number of bytes written as "data_written"
+    # - write_file_at: [Called often!] Called when a file is written to at a specific location includes the file name as "path" and the number of bytes written as "data_written" and the offset as "offset"
+    # - read_dir: Called when a directory is listed includes the directory name as "path" 
+    # - read_dir_names: Called when a directory is listed includes the directory name as "path"
+    # - sync: Called when a resource is synced includes the resource name as "path"
+    # - truncate: Called when a file is truncated includes the file name as "path" and the new size as "size"
+    # - write_string: Called when a string is written to a file includes the file name as "path" and the number of bytes written as "data_written"
+    # - client_connected: Called when a client connects to the FTP server 
+    # - client_disconnected: Called when a client disconnects from the FTP server
+    # - auth_user: Called when a user authenticates includes includes the client ip as "client_ip", the client version as "client_version", the client username as "user", the client password as "pass"
+    commands_to_log: "all"
 
-  
+    # Comma delimitated fields to log (No spaces). Thease are extra fields added to EVERY log line for the FTP server
+    # The following fields are available:
+    #  - id: The ID of the connected client
+    #  - dest_addr: The destination address of the client
+    #  - dest_port: The destination port of the client
+    #  - dest_host: The destination host of the client
+    #  - src_addr: The source address of the client
+    #  - src_port: The source port of the client
+    #  - src_host: The source host of the client
+    #  - client_version: The version of the client if one is given
+    #  - type: always "ftp"
+    #  - none: No fields
+    additional_fields: "id"

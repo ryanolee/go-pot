@@ -19,6 +19,7 @@ import (
 	"github.com/ryanolee/ryan-pot/protocol/ftp"
 	ftpDi "github.com/ryanolee/ryan-pot/protocol/ftp/di"
 	"github.com/ryanolee/ryan-pot/protocol/ftp/driver"
+	ftpLogging "github.com/ryanolee/ryan-pot/protocol/ftp/logging"
 	ftpStall "github.com/ryanolee/ryan-pot/protocol/ftp/stall"
 	"github.com/ryanolee/ryan-pot/protocol/ftp/throttle"
 	"github.com/ryanolee/ryan-pot/protocol/http"
@@ -45,6 +46,8 @@ func CreateContainer(conf *config.Config) *fx.App {
 		fx.Provide(
 			// Logging
 			logging.NewLogger,
+			httpLogger.NewHttpAccessLogger,
+			ftpLogging.NewFtpCommandLogger,
 
 			// Metrics
 			metrics.NewTimeoutWatcher,
@@ -132,6 +135,9 @@ func CreateContainer(conf *config.Config) *fx.App {
 		}),
 
 		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
+			if !conf.Logging.StartUpLogEnabled {
+				return &fxevent.ZapLogger{Logger: zap.NewNop()}
+			}
 			return &fxevent.ZapLogger{Logger: log}
 		}),
 	)

@@ -16,6 +16,7 @@ var ftpCommand = &cobra.Command{
 		conf, err := config.NewConfig(cmd, config.GetFtpFlags())
 
 		if err != nil {
+			fmt.Println("Failed to start go pot in FTP mode due to a bad configuration.  Please check your GO__POT__ environment variables, cli flags and config file (if set).\nThe errors are as follows:")
 			fmt.Println(err)
 			os.Exit(1)
 		}
