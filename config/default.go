@@ -11,7 +11,7 @@ var defaultConfig = Config{
 		Network:        "tcp4",
 		ProxyHeader:    "X-Forwarded-For",
 		TrustedProxies: []string{},
-		AccessLog: accessLogConfig{
+		AccessLog: httpAccessLogConfig{
 			Mode: "end",
 			FieldsToLog: []string{
 				"src_ip",
@@ -36,6 +36,14 @@ var defaultConfig = Config{
 			ChunkSize:     1,
 			ChunkSendRate: 1000,
 			FileSize:      1024 * 1024 * 20, // 20Mb
+		},
+		CommandLog: ftpCommandLogConfig{
+			CommandsToLog: []string{
+				"all",
+			},
+			AdditionalFields: []string{
+				"id",
+			},
 		},
 	},
 	Logging: loggingConfig{

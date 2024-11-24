@@ -4,6 +4,7 @@ import (
 	"github.com/ryanolee/ryan-pot/config"
 	"github.com/ryanolee/ryan-pot/core/stall"
 	"github.com/ryanolee/ryan-pot/generator"
+	"github.com/ryanolee/ryan-pot/protocol/ftp/logging"
 	ftpStall "github.com/ryanolee/ryan-pot/protocol/ftp/stall"
 	"github.com/ryanolee/ryan-pot/protocol/ftp/throttle"
 	"github.com/ryanolee/ryan-pot/secrets"
@@ -19,6 +20,7 @@ type (
 		throttle         *throttle.FtpThrottle
 		stallPool        *stall.StallerPool
 		ftpStallFactory  *ftpStall.FtpFileStallerFactory
+		logger           *logging.FtpCommandLogger
 	}
 )
 
@@ -29,6 +31,7 @@ func NewFtpRepository(
 	throttle *throttle.FtpThrottle,
 	stallPool *stall.StallerPool,
 	ftpStallFactory *ftpStall.FtpFileStallerFactory,
+	ftpCommandLogger *logging.FtpCommandLogger,
 ) *FtpRepository {
 	return &FtpRepository{
 		config:           config,
@@ -37,6 +40,7 @@ func NewFtpRepository(
 		throttle:         throttle,
 		stallPool:        stallPool,
 		ftpStallFactory:  ftpStallFactory,
+		logger:           ftpCommandLogger,
 	}
 }
 
@@ -62,4 +66,8 @@ func (r *FtpRepository) GetFtpStallFactory() *ftpStall.FtpFileStallerFactory {
 
 func (r *FtpRepository) GetConfig() *config.Config {
 	return r.config
+}
+
+func (r *FtpRepository) GetLogger() *logging.FtpCommandLogger {
+	return r.logger
 }

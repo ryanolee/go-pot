@@ -79,6 +79,13 @@ var commonFlags = flagMap{
 		configType:   "int",
 		defaultValue: defaultConfig.Staller.MaximumConnections,
 	},
+	"log-path": {
+		flagName:     "log-path",
+		configKey:    "logging.path",
+		description:  "The path to write the log to. (If not set, logs will be written to stdout.)",
+		configType:   "string",
+		defaultValue: defaultConfig.Logging.Path,
+	},
 }
 
 var httpFlags = flagMap{
@@ -190,6 +197,27 @@ var ftpFlags = flagMap{
 		description:  "The range of passive ports to use for FTP data connections. (in the format of 'start-end')",
 		configType:   "string",
 		defaultValue: defaultConfig.FtpServer.PassivePortRange,
+	},
+	"ftp-log-path": {
+		flagName:     "ftp-log-path",
+		configKey:    "ftp_server.command_log.path",
+		description:  "The path to write the ftp command log to. (If not set, logs will be written to stdout.)",
+		configType:   "string",
+		defaultValue: defaultConfig.FtpServer.CommandLog.Path,
+	},
+	"ftp-log-commands": {
+		flagName:     "ftp-log-commands",
+		configKey:    "ftp_server.command_log.commands_to_log",
+		description:  "The commands to log in the ftp command log as comma separated values. (Lookup documentation for available commands.)",
+		configType:   "string",
+		defaultValue: strings.Join(defaultConfig.FtpServer.CommandLog.CommandsToLog, ","),
+	},
+	"ftp-log-fields": {
+		flagName:     "ftp-log-fields",
+		configKey:    "ftp_server.command_log.additional_fields",
+		description:  "The additional fields to log in each line of the FTP log. (Lookup documentation for available fields.)",
+		configType:   "string",
+		defaultValue: strings.Join(defaultConfig.FtpServer.CommandLog.AdditionalFields, ","),
 	},
 }
 

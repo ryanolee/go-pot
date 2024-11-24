@@ -153,7 +153,11 @@ func NewHttpAccessLogger(cfg *config.Config, mainLogger *zap.Logger) (*HttpAcces
 	loggerCfg := zap.NewProductionConfig()
 
 	if cfg.Server.AccessLog.Path != "" {
-		loggerCfg.OutputPaths = []string{cfg.Server.AccessLog.Path, "stdout"}
+		loggerCfg.OutputPaths = []string{cfg.Server.AccessLog.Path}
+	} else if cfg.Logging.Path != "" {
+		loggerCfg.OutputPaths = []string{cfg.Logging.Path}
+	} else {
+		loggerCfg.OutputPaths = []string{"stdout"}
 	}
 
 	logger, err := loggerCfg.Build()
