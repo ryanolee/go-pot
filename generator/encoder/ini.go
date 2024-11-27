@@ -7,7 +7,7 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-type IniEncoder struct {}
+type IniEncoder struct{}
 
 func NewIniEncoder() *IniEncoder {
 	return &IniEncoder{}
@@ -47,11 +47,11 @@ func (e *IniEncoder) Marshal(v interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return buffer.Bytes(), nil
 }
 
-func mapUnknownIniSections(file *ini.File, value map[string]interface{}){
+func mapUnknownIniSections(file *ini.File, value map[string]interface{}) {
 	for sectionName, sectionValue := range value {
 		section, err := file.NewSection(sectionName)
 		if err != nil {
@@ -64,7 +64,7 @@ func mapUnknownIniSections(file *ini.File, value map[string]interface{}){
 	}
 }
 
-func mapUnknownValuesToIniSection(section *ini.Section, value map[string]interface{}){
+func mapUnknownValuesToIniSection(section *ini.Section, value map[string]interface{}) {
 	for key, value := range value {
 		bytes, err := json.Marshal(value)
 
@@ -72,6 +72,8 @@ func mapUnknownValuesToIniSection(section *ini.Section, value map[string]interfa
 			continue
 		}
 
-		section.NewKey(key, string(bytes))
+		if _, err := section.NewKey(key, string(bytes)); err != nil {
+			continue
+		}
 	}
 }

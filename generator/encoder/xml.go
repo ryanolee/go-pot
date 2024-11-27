@@ -5,9 +5,10 @@ import (
 	"fmt"
 )
 
-type XmlEncoder struct {}
+type XmlEncoder struct{}
 
 type UnknownMap map[string]interface{}
+
 func NewUnknownMap(data interface{}) UnknownMap {
 	returnData := make(UnknownMap)
 	dataMap, ok := data.(map[string]interface{})
@@ -18,7 +19,7 @@ func NewUnknownMap(data interface{}) UnknownMap {
 	for key, value := range dataMap {
 		switch value.(type) {
 		case map[string]interface{}:
-				returnData[key] = NewUnknownMap(value)
+			returnData[key] = NewUnknownMap(value)
 		case []interface{}:
 			for index, item := range value.([]interface{}) {
 				returnData[fmt.Sprintf("%s.%d", key, index)] = NewUnknownMap(item)
@@ -31,28 +32,30 @@ func NewUnknownMap(data interface{}) UnknownMap {
 	return returnData
 }
 func (s UnknownMap) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-    tokens := []xml.Token{start}
+	tokens := []xml.Token{start}
 
-    for key, value := range s {
-        t := xml.StartElement{Name: xml.Name{"", key}}
+	for key, value := range s {
+		t := xml.StartElement{Name: xml.Name{"", key}}
 		if data, ok := value.(UnknownMap); ok {
-			data.MarshalXML(e, t)
+			if err := data.MarshalXML(e, t); err != nil {
+				return err
+			}
 		} else {
 			tokens = append(tokens, t, xml.CharData(fmt.Sprintf("%v", value)), xml.EndElement{t.Name})
 		}
-    }
+	}
 
-    tokens = append(tokens, xml.EndElement{start.Name})
+	tokens = append(tokens, xml.EndElement{start.Name})
 
-    for _, t := range tokens {
-        err := e.EncodeToken(t)
-        if err != nil {
-            return err
-        }
-    }
+	for _, t := range tokens {
+		err := e.EncodeToken(t)
+		if err != nil {
+			return err
+		}
+	}
 
-    // flush to ensure tokens are written
-    return e.Flush()
+	// flush to ensure tokens are written
+	return e.Flush()
 }
 
 func NewXmlEncoder() *XmlEncoder {

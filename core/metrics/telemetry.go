@@ -134,7 +134,12 @@ func (t *Telemetry) StartMetricsServer() {
 	logger := logging.NewServerLogger(zap.L().Named("metrics-server"))
 	logger.Use(t.app)
 	t.app.Get(t.serverPath, adaptor.HTTPHandler(promhttp.HandlerFor(t.getPrometheusRegistry(), promhttp.HandlerOpts{})))
-	go func() { t.app.Listen(fmt.Sprintf(":%d", t.serverPort)) }()
+	go func() {
+		if err := t.app.Listen(fmt.Sprintf(":%d", t.serverPort)); err != nil {
+			// Not sure how to handle this error
+			zap.L().Sugar().Fatalw("Failed to start metrics server", "error", err)
+		}
+	}()
 }
 
 func (t *Telemetry) Stop() {

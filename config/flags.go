@@ -300,11 +300,17 @@ func writeFlagValues(k *koanf.Koanf, cmd *cobra.Command, flagsUsed flagMap) *koa
 
 		switch flag.configType {
 		case "int":
-			k.Set(flag.configKey, readFlagOrPanic(cmd.Flags().GetInt(flag.flagName)))
+			if err := k.Set(flag.configKey, readFlagOrPanic(cmd.Flags().GetInt(flag.flagName))); err != nil {
+				continue
+			}
 		case "string":
-			k.Set(flag.configKey, readFlagOrPanic(cmd.Flags().GetString(flag.flagName)))
+			if err := k.Set(flag.configKey, readFlagOrPanic(cmd.Flags().GetString(flag.flagName))); err != nil {
+				continue
+			}
 		case "bool":
-			k.Set(flag.configKey, readFlagOrPanic(cmd.Flags().GetBool(flag.flagName)))
+			if err := k.Set(flag.configKey, readFlagOrPanic(cmd.Flags().GetBool(flag.flagName))); err != nil {
+				continue
+			}
 		}
 	}
 
