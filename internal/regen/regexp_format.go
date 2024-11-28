@@ -30,20 +30,6 @@ func inspectRegexpToString(r *syntax.Regexp) string {
 	return buffer.String()
 }
 
-// inspectPatternsToString returns a string describing one or more regular expressions.
-func inspectPatternsToString(simplify bool, patterns ...string) string {
-	var buffer bytes.Buffer
-	for _, pattern := range patterns {
-		inspectPatternsToWriter(simplify, &buffer, pattern)
-	}
-	return buffer.String()
-}
-func inspectPatternsToWriter(simplify bool, w io.Writer, patterns ...string) {
-	for _, pattern := range patterns {
-		inspectRegexpToWriter(w, parseOrPanic(simplify, pattern))
-	}
-}
-
 func inspectRegexpToWriter(w io.Writer, r ...*syntax.Regexp) {
 	for _, regexp := range r {
 		inspectWithIndent(regexp, "", w)
@@ -67,19 +53,6 @@ func inspectWithIndent(r *syntax.Regexp, indent string, w io.Writer) {
 	fmt.Fprintf(w, "%s  [Min, Max]: [%d, %d]\n", indent, r.Min, r.Max)
 	fmt.Fprintf(w, "%s  Cap: %d\n", indent, r.Cap)
 	fmt.Fprintf(w, "%s  Name: %s\n", indent, r.Name)
-}
-
-// ParseOrPanic parses a regular expression into an AST.
-// Panics on error.
-func parseOrPanic(simplify bool, pattern string) *syntax.Regexp {
-	regexp, err := syntax.Parse(pattern, 0)
-	if err != nil {
-		panic(err)
-	}
-	if simplify {
-		regexp = regexp.Simplify()
-	}
-	return regexp
 }
 
 // runesToString converts a slice of runes to the string they represent.

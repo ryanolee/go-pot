@@ -1,7 +1,6 @@
 package stall
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 
@@ -32,7 +31,7 @@ func (c *StallerCollection) Add(staller Staller) error {
 	}
 
 	if len(c.stallers[staller.GetGroupIdentifier()]) > c.groupLimit {
-		return errors.New(fmt.Sprintf("failed to add id %d to group %s due to group limit %d being reached", staller.GetIdentifier(), staller.GetGroupIdentifier(), c.groupLimit))
+		return fmt.Errorf("failed to add id %d to group %s due to group limit %d being reached", staller.GetIdentifier(), staller.GetGroupIdentifier(), c.groupLimit)
 	}
 
 	c.stallers[staller.GetGroupIdentifier()][staller.GetIdentifier()] = staller

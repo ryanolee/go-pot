@@ -15,30 +15,32 @@ const SECRET_DEFINITION_URLS = "https://raw.githubusercontent.com/gitleaks/gitle
 
 type (
 	GitLeaksSecretRule struct {
-		Id string `toml:"id"`
+		Id          string `toml:"id"`
 		Description string `toml:"description"`
-		Regex string `toml:"regex"`
+		Regex       string `toml:"regex"`
 	}
 
 	GitLeaksSecretRules struct {
 		Rules []GitLeaksSecretRule `toml:"rules"`
-	}	
+	}
 )
 
 func GetSecretsFromGitLeaks() (*GitLeaksSecretRules, error) {
 	resp, err := http.Get(SECRET_DEFINITION_URLS)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-		
-		secretsData := &GitLeaksSecretRules{}
-		toml.Decode(string(body), secretsData)
-		return secretsData, nil
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	secretsData := &GitLeaksSecretRules{}
+	if _, err := toml.Decode(string(body), secretsData); err != nil {
+		return nil, err
+	}
+	return secretsData, nil
 }
 
 func UpdateSecretsFromGitLeaks() ([]byte, error) {
@@ -46,14 +48,14 @@ func UpdateSecretsFromGitLeaks() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	currentRules := make(map[string]SecretGeneratorRule)
 	for _, gitLeaksSecret := range gitLeaksSecrets.Rules {
 		currentRules[gitLeaksSecret.Id] = SecretGeneratorRule{
-			Name: gitLeaksSecret.Id,
-			NameRegex: formatSecretsNameRegex(gitLeaksSecret.Id),
+			Name:        gitLeaksSecret.Id,
+			NameRegex:   formatSecretsNameRegex(gitLeaksSecret.Id),
 			SecretRegex: formatSecretsRegex(gitLeaksSecret.Regex),
-			Weight: 1,
+			Weight:      1,
 		}
 	}
 
@@ -74,12 +76,12 @@ func formatSecretsRegex(secretRegex string) string {
 func formatSecretsNameRegex(secretNameRegex string) string {
 
 	secretNameRegex = replaceLikeForLike(
-		secretNameRegex, 
+		secretNameRegex,
 		[]string{"api", "service"},
 	)
 
 	secretNameRegex = replaceLikeForLike(
-		secretNameRegex, 
+		secretNameRegex,
 		[]string{"secret", "token", "key"},
 	)
 
@@ -87,7 +89,7 @@ func formatSecretsNameRegex(secretNameRegex string) string {
 
 }
 
-func replaceLikeForLike(subject string, terms []string) string{
+func replaceLikeForLike(subject string, terms []string) string {
 	return replaceTermsWithAlternatives(subject, terms, terms)
 }
 
@@ -96,5 +98,3 @@ func replaceTermsWithAlternatives(subject string, terms []string, replacements [
 	replacementsRegex := fmt.Sprintf("(%s)", strings.Join(replacements, "|"))
 	return termsRegex.ReplaceAllString(subject, replacementsRegex)
 }
-
-

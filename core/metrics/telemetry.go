@@ -92,7 +92,9 @@ func NewTelemetry(lf fx.Lifecycle, config *config.Config) (*Telemetry, error) {
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			telemetry.Stop()
+			if err := telemetry.Stop(); err != nil {
+				return err
+			}
 			return nil
 		},
 	})
@@ -142,11 +144,16 @@ func (t *Telemetry) StartMetricsServer() {
 	}()
 }
 
-func (t *Telemetry) Stop() {
+func (t *Telemetry) Stop() error {
 	zap.L().Sugar().Warnw("Stopping telemetry")
-	t.StopPushGateway()
-	t.StopMetricsServer()
+	if err := t.StopPushGateway(); err != nil {
+		return err
+	}
+	if err := t.StopMetricsServer(); err != nil {
+		return err
+	}
 	zap.L().Sugar().Warnw("Stopped telemetry")
+	return nil
 }
 
 func (t *Telemetry) StopPushGateway() error {

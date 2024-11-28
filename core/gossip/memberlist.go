@@ -24,25 +24,25 @@ type (
 
 	Memberlist struct {
 		// The memberlist client
-		client       *memberlist.Memberlist
+		client *memberlist.Memberlist
 
 		// The delegate for memberlist events
-		delegate     *MessageDelegate
+		delegate *MessageDelegate
 
 		// The channel to shutdown listeners for broadcast actions
 		shutdownChan chan bool
 
 		// The handler for broadcast actions. Is used to recieve events. Parse them and act upon them.
-		handler 	handler.IBroadcastActionHandler
+		handler handler.IBroadcastActionHandler
 
 		// The number of connection attempts to make to other nodes in the cluster before giving up
 		connectionAttempts int
 
 		// The timeout for each connection attempt
-		connectionTimeout  time.Duration
-		
+		connectionTimeout time.Duration
+
 		// The metadata for the current node
-		nodeInfo 		 *NodeInfo
+		nodeInfo *NodeInfo
 	}
 
 	// Metadata related to the current node
@@ -53,7 +53,7 @@ type (
 )
 
 func NewMemberList(lf fx.Lifecycle, logger *zap.Logger, config *config.Config, broadcastHandler handler.IBroadcastActionHandler) (*Memberlist, error) {
-	if !config.Cluster.Enabled{
+	if !config.Cluster.Enabled {
 		return nil, nil
 	}
 
@@ -100,18 +100,22 @@ func NewMemberList(lf fx.Lifecycle, logger *zap.Logger, config *config.Config, b
 	}
 
 	memberList := &Memberlist{
-		client:       client,
-		delegate:     msgDelegate,
-		handler:      broadcastHandler,
-		shutdownChan: make(chan bool),
+		client:             client,
+		delegate:           msgDelegate,
+		handler:            broadcastHandler,
+		shutdownChan:       make(chan bool),
 		connectionAttempts: config.Cluster.ConnectionAttempts,
 		connectionTimeout:  time.Duration(config.Cluster.ConnectionTimeout) * time.Second,
-		nodeInfo: nodeInfo,
+		nodeInfo:           nodeInfo,
 	}
-	
+
 	lf.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			go memberList.Join()
+			go func() {
+				if err := memberList.Join(); err != nil {
+					zap.L().Sugar().Error("Failed to join member list", "error", err)
+				}
+			}()
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
@@ -138,14 +142,11 @@ func (m *Memberlist) Join() error {
 		return errors.New("failed to connect to any other nodes in the cluster")
 	}
 
-
-
 	zap.L().Sugar().Infow("Connected to other nodes", "peers", m.client.NumMembers(), "ip", m.GetIpAddress())
 	m.listenForBroadcastActions()
 
 	return nil
 }
-
 
 // GetIpAddress returns the IP address of the current node
 func (m *Memberlist) GetIpAddress() string {
@@ -177,6 +178,7 @@ func (m *Memberlist) listenForBroadcastActions() {
 	}()
 }
 
+// nolint:errcheck
 func (m *Memberlist) Shutdown() {
 	m.client.Shutdown()
 	m.shutdownChan <- true

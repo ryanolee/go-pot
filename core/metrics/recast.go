@@ -12,8 +12,6 @@ import (
 )
 
 const (
-	minimumRecastInterval = 30
-	maximumRecastInterval = 120
 
 	// If the node has spent less than 5% of its time wasting other nodes time then it should recast
 	timeWastedRatio = 0.05
