@@ -12,8 +12,6 @@ import (
 )
 
 const (
-	minimumRecastInterval = 30
-	maximumRecastInterval = 120
 
 	// If the node has spent less than 5% of its time wasting other nodes time then it should recast
 	timeWastedRatio = 0.05
@@ -85,7 +83,10 @@ func (r *Recast) StartChecking() {
 
 				if wastedTimeSinceLastCheck < recastCheckDuration.Seconds()*timeWastedRatio {
 					zap.L().Sugar().Warnw("Node should recast", "wastedTimeSinceLastCheck", wastedTimeSinceLastCheck, "timeWastedRatio", timeWastedRatio, "recastCheckDuration", recastCheckDuration)
-					r.shutdowner.Shutdown()
+					if err := r.shutdowner.Shutdown(); err != nil {
+						// Not sure how to handle this error
+						return
+					}
 					return
 				}
 

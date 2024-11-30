@@ -82,7 +82,6 @@ func (f *FtpServerDriver) ClientDisconnected(cc ftpserver.ClientContext) {
 	f.logger.LogWithContext(cc, "client_disconnected")
 	clientId := f.clientFactory.GetClientIdFromContent(cc)
 	f.throttle.Unregister(clientId)
-	return
 }
 
 func (f *FtpServerDriver) AuthUser(cc ftpserver.ClientContext, user, pass string) (ftpserver.ClientDriver, error) {

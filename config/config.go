@@ -347,7 +347,12 @@ func NewConfig(cmd *cobra.Command, flagsUsed flagMap) (*Config, error) {
 		return nil, err
 	}
 
-	validator := newConfigValidator()
+	validator, err := newConfigValidator()
+
+	if err != nil {
+		return nil, err
+	}
+
 	if err := validator.Struct(cfg); err != nil {
 		return nil, err
 	}
@@ -366,7 +371,9 @@ func setStringSlice(k *koanf.Koanf, key string) {
 	stringVal := k.String(key)
 
 	if stringVal != "" && stringVal != "[]" {
-		k.Set(key, strings.Split(k.String(key), ","))
+		if err := k.Set(key, strings.Split(k.String(key), ",")); err != nil {
+			return
+		}
 	} else {
 		k.Delete(key)
 	}

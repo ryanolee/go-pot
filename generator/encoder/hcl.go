@@ -8,14 +8,11 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-
-
-type HclEncoder struct {}
+type HclEncoder struct{}
 
 func NewHclEncoder() *HclEncoder {
 	return &HclEncoder{}
 }
-
 
 func (e *HclEncoder) Marshal(v interface{}) ([]byte, error) {
 	f := hclwrite.NewEmptyFile()
@@ -26,7 +23,11 @@ func (e *HclEncoder) Marshal(v interface{}) ([]byte, error) {
 	}
 
 	buffer := new(bytes.Buffer)
-	f.WriteTo(buffer)
+
+	if _, err := f.WriteTo(buffer); err != nil {
+		return nil, err
+	}
+
 	return buffer.Bytes(), nil
 }
 
@@ -50,17 +51,17 @@ func (*HclEncoder) GetSupportedGenerator() string {
 	return "config"
 }
 
-func mapUnknownHclBlocks(file *hclwrite.Body, value map[string]interface{}){
+func mapUnknownHclBlocks(file *hclwrite.Body, value map[string]interface{}) {
 	for blockName, sectionValue := range value {
 		block := file.AppendNewBlock(blockName, make([]string, 0))
-		
+
 		if data, ok := sectionValue.(map[string]interface{}); ok {
 			mapUnknownValuesToHclBlock(block, data)
 		}
 	}
 }
 
-func mapUnknownValuesToHclBlock(block *hclwrite.Block, value map[string]interface{}){
+func mapUnknownValuesToHclBlock(block *hclwrite.Block, value map[string]interface{}) {
 	body := block.Body()
 	for key, value := range value {
 		bytes, err := json.Marshal(value)

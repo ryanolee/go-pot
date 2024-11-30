@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -16,10 +15,6 @@ import (
 const (
 	privateIpPrefix = "172.31."
 )
-
-func inFargateCluster() bool {
-	return os.Getenv("AWS_EXECUTION_ENV") == "AWS_ECS_FARGATE"
-}
 
 func gatherFargateNodeInfo() (*NodeInfo, error) {
 	meta, err := metadata.GetContainerV4(context.Background(), &http.Client{})

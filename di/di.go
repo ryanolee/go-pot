@@ -121,7 +121,11 @@ func CreateContainer(conf *config.Config) *fx.App {
 				return
 			}
 			zap.L().Info("Starting Http server", zap.Int("port", s.ListenPort), zap.String("host", s.ListenHost))
-			go s.Start()
+			go func() {
+				if err := s.Start(); err != nil {
+					zap.L().Sugar().Fatalf("Failed to start Http server", "error", err)
+				}
+			}()
 		}),
 
 		// Start Ftp server
@@ -131,7 +135,11 @@ func CreateContainer(conf *config.Config) *fx.App {
 				return
 			}
 			zap.L().Info("Starting Ftp server", zap.Int("port", c.FtpServer.Port), zap.String("host", c.FtpServer.Host), zap.String("passive_port_range", c.FtpServer.PassivePortRange))
-			go s.ListenAndServe()
+			go func() {
+				if err := s.ListenAndServe(); err != nil {
+					zap.L().Sugar().Fatalf("Failed to start Ftp server", "error", err)
+				}
+			}()
 		}),
 
 		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {

@@ -39,6 +39,10 @@ func getSelfSignedCert(c *config.Config) (tls.Certificate, error) {
 
 	x509Cert, err := x509.CreateCertificate(rand.Reader, certTemplate, certTemplate, key.Public(), key)
 
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
 	pemCert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: x509Cert})
 	pemKey := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
 	return tls.X509KeyPair(pemCert, pemKey)

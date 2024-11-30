@@ -46,8 +46,10 @@ func validatePortRange(portRange validator.FieldLevel) bool {
 	return true
 }
 
-func newConfigValidator() *validator.Validate {
+func newConfigValidator() (*validator.Validate, error) {
 	v := validator.New()
-	v.RegisterValidation("port_range", validatePortRange)
-	return v
+	if err := v.RegisterValidation("port_range", validatePortRange); err != nil {
+		return nil, err
+	}
+	return v, nil
 }

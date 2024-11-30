@@ -7,7 +7,9 @@ import (
 
 func NewLogger(cfg *config.Config) (*zap.Logger, error) {
 	loggerCfg := zap.NewProductionConfig()
-	loggerCfg.Level.UnmarshalText([]byte(cfg.Logging.Level))
+	if err := loggerCfg.Level.UnmarshalText([]byte(cfg.Logging.Level)); err != nil {
+		return nil, err
+	}
 
 	return loggerCfg.Build()
 }
