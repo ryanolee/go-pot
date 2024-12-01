@@ -106,12 +106,12 @@ func (t *FtpThrottle) ReleasePendingProcess(id int64) {
 
 func (t *FtpThrottle) Start() {
 	go func() {
-		operationTicker := time.Tick(t.waitTime)
+		operationTicker := time.NewTicker(t.waitTime)
 		for {
 			select {
 			case <-t.closeChannel:
 				return
-			case <-operationTicker:
+			case <-operationTicker.C:
 				t.ReleaseOnePendingProcessFromEach()
 			}
 		}

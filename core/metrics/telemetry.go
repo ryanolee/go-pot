@@ -109,13 +109,14 @@ func (t *Telemetry) StartPushGateway() {
 	}
 
 	registry := t.getPrometheusRegistry()
+
 	go func() {
-		ticker := time.Tick(time.Second * time.Duration(t.pushGatewayIntervalSecs))
+		pushTicker := time.NewTicker(time.Second * time.Duration(t.pushGatewayIntervalSecs))
 		for {
 			select {
 			case <-t.shutdownChan:
 				return
-			case <-ticker:
+			case <-pushTicker.C:
 				if err := t.getAuthedClient().Gatherer(registry).Push(); err != nil {
 					zap.L().Sugar().Errorw("Failed to push metrics", "error", err)
 				}

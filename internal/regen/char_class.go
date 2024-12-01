@@ -57,10 +57,10 @@ e.g.
 func parseCharClass(runes []rune) *tCharClass {
 	var totalSize int32
 	numRanges := len(runes) / 2
-	ranges := make([]tCharClassRange, numRanges, numRanges)
+	ranges := make([]tCharClassRange, numRanges)
 
 	for i := 0; i < numRanges; i++ {
-		
+
 		start := runes[i*2]
 		end := runes[i*2+1]
 

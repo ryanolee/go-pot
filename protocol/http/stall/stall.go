@@ -116,7 +116,11 @@ func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
 		for {
 			if errors.Is(closeContext.Err(), context.DeadlineExceeded) {
 				// Flush the rest of the data to the client in the case we are closing
-				w.Write(s.generator.End())
+				_, err := w.Write(s.generator.End())
+				if err != nil {
+					logger.Warn("Failed to write end!", "connId", s.id, "err", err)
+				}
+
 				w.Flush()
 				s.Halt()
 				s.handleClose()
@@ -134,14 +138,20 @@ func (s *HttpStaller) StallContextBuffer(ctx *fiber.Ctx) error {
 				cancelContext()
 				return
 			}
-			s.PushDataToClient(closeContext, w, s.generator.ChunkSeparator())
+
+			if _, err := s.PushDataToClient(closeContext, w, s.generator.ChunkSeparator()); err != nil {
+				logger.Warn("Failed to write chunk separator!", "connId", s.id, "err", err)
+				s.Halt()
+				cancelContext()
+				return
+			}
 		}
 	})
 	return nil
 }
 
 func (s *HttpStaller) PushDataToClient(ctx context.Context, w *bufio.Writer, data []byte) (bool, error) {
-
+	var dataToWrite []byte
 	for i := 0; i < len(data); i++ {
 		select {
 		case <-s.ticker.C:
@@ -149,7 +159,6 @@ func (s *HttpStaller) PushDataToClient(ctx context.Context, w *bufio.Writer, dat
 				return false, nil
 			}
 
-			dataToWrite := []byte{}
 			if string(data[i:i+1]) == "\\n" {
 				dataToWrite = []byte("\\n")
 				i++
@@ -170,10 +179,17 @@ func (s *HttpStaller) PushDataToClient(ctx context.Context, w *bufio.Writer, dat
 			s.telemetry.TrackWastedTime(StallerReportInterval)
 		case <-ctx.Done():
 			// Flush the rest of the data to the client in the case we are closing
-			w.Write(data[i:])
+			if _, err := w.Write(data[i:]); err != nil {
+				zap.L().Sugar().Warn("Failed rest if data", "connId", s.id, "err", err)
+
+			}
 			w.Flush()
-			w.Write(s.generator.End())
+
+			if _, err := w.Write(s.generator.End()); err != nil {
+				zap.L().Sugar().Warn("Failed to write end of data", "connId", s.id, "err", err)
+			}
 			w.Flush()
+
 			s.handleClose()
 			return false, nil
 		}

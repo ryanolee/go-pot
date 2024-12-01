@@ -107,9 +107,14 @@ func CreateContainer(conf *config.Config) *fx.App {
 				signal.Notify(shutdownChannel, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
 				<-shutdownChannel
+				zap.L().Info("Shutting down...")
+				err := shutdown.Shutdown()
+				if err != nil {
+					zap.L().Sugar().Fatalf("Error shutting down, Forcing shutdown", zap.Error(err))
+				}
 
-				shutdown.Shutdown()
 				time.Sleep(time.Second * 30)
+				zap.L().Info("Deadline has passed after 30 seconds, Forcing shutdown.")
 				os.Exit(0)
 			}()
 		}),
