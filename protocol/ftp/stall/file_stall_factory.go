@@ -10,6 +10,7 @@ import (
 	"github.com/ryanolee/ryan-pot/generator"
 	"github.com/ryanolee/ryan-pot/generator/encoder"
 	"github.com/ryanolee/ryan-pot/secrets"
+	"go.uber.org/zap"
 )
 
 var crc64Table = crc64.MakeTable(crc64.ISO)
@@ -52,6 +53,11 @@ func (f *FtpFileStallerFactory) FromName(ctx ftpserver.ClientContext, name strin
 		BytesToSend: size,
 	})
 
-	f.stallerPool.Register(staller)
+	if err := f.stallerPool.Register(staller); err != nil {
+		zap.L().Warn("Failed to register staller", zap.Error(err))
+		staller.Close()
+		return nil
+	}
+
 	return staller
 }

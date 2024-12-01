@@ -19,10 +19,6 @@ type (
 		additionalFieldsToLog []string
 	}
 
-	FtpCommandLoggerContext struct {
-		sessionId string
-	}
-
 	contextBoundFtpCommandLogger struct {
 		logger  *FtpCommandLogger
 		context ftpserver.ClientContext
@@ -32,22 +28,22 @@ type (
 )
 
 func getPort(addr net.Addr) uint {
-	switch addr.(type) {
+	switch v := addr.(type) {
 	case *net.UDPAddr:
-		return uint(addr.(*net.UDPAddr).Port)
+		return uint(v.Port)
 	case *net.TCPAddr:
-		return uint(addr.(*net.TCPAddr).Port)
+		return uint(v.Port)
 	}
 
 	return 0
 }
 
 func getHost(addr net.Addr) string {
-	switch addr.(type) {
+	switch v := addr.(type) {
 	case *net.UDPAddr:
-		return addr.(*net.UDPAddr).IP.String()
+		return v.IP.String()
 	case *net.TCPAddr:
-		return addr.(*net.TCPAddr).IP.String()
+		return v.IP.String()
 	}
 
 	return ""
