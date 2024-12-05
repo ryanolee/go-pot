@@ -11,8 +11,8 @@ require (
 	github.com/go-faker/faker/v4 v4.2.0
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/gofiber/contrib/fiberzap/v2 v2.1.1
-	github.com/gofiber/fiber/v2 v2.49.2
-	github.com/google/uuid v1.4.0
+	github.com/gofiber/fiber/v2 v2.52.5
+	github.com/google/uuid v1.5.0
 	github.com/hashicorp/hcl/v2 v2.19.1
 	github.com/hashicorp/memberlist v0.5.0
 	github.com/knadh/koanf/parsers/yaml v0.1.0
@@ -75,7 +75,7 @@ require (
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/miekg/dns v1.1.26 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
