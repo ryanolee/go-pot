@@ -27,8 +27,8 @@ import (
 	httpStall "github.com/ryanolee/go-pot/protocol/http/stall"
 	"github.com/ryanolee/go-pot/secrets"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 
-	//"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
 )
 
@@ -120,12 +120,12 @@ func CreateContainer(conf *config.Config) *fx.App {
 
 		// Start HTTP server
 		fx.Invoke(func(c *config.Config, s *http.Server) {
-			fmt.Println("HTTP Server Enabled: ", !conf.Server.Disable)
+			zap.L().Info("HTTP Server Enabled: ", zap.Bool("enabled", !conf.Server.Disable))
 			if conf.Server.Disable {
 				zap.L().Info("Http is disabled")
 				return
 			}
-			fmt.Println("Starting Http server", zap.Int("port", s.ListenPort), zap.String("host", s.ListenHost))
+			zap.L().Info("Starting Http server", zap.Int("port", s.ListenPort), zap.String("host", s.ListenHost))
 			go func() {
 				if err := s.Start(); err != nil {
 					zap.L().Fatal("Failed to start Http server", zap.Error(err))
@@ -148,11 +148,11 @@ func CreateContainer(conf *config.Config) *fx.App {
 			}()
 		}),
 
-		//fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
-		//	if !conf.Logging.StartUpLogEnabled {
-		//		return &fxevent.ZapLogger{Logger: zap.NewNop()}
-		//	}
-		//	return &fxevent.ZapLogger{Logger: log}
-		//}),
+		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
+			if !conf.Logging.StartUpLogEnabled {
+				return &fxevent.ZapLogger{Logger: zap.NewNop()}
+			}
+			return &fxevent.ZapLogger{Logger: log}
+		}),
 	)
 }
