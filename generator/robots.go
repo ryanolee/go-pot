@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ryanolee/ryan-pot/rand"
+	"github.com/ryanolee/go-pot/rand"
 	"github.com/thoas/go-funk"
 )
 
 var (
-    //go:embed data/robots.wordlist.txt
-    rulesFile embed.FS
+	//go:embed data/robots.wordlist.txt
+	rulesFile embed.FS
 )
 
 const robotsTxtFile = "data/robots.wordlist.txt"
 
 type RobotsTxtGenerator struct {
-	rand *rand.SeededRand
+	rand         *rand.SeededRand
 	robotEntries *[]string
 }
 
@@ -30,7 +30,7 @@ func NewRobotsTxtGenerator(rand *rand.SeededRand) (*RobotsTxtGenerator, error) {
 	robotEntries := strings.Split(string(rulesFile), "\n")
 
 	return &RobotsTxtGenerator{
-		rand: rand,
+		rand:         rand,
 		robotEntries: &robotEntries,
 	}, nil
 }

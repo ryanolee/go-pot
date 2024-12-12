@@ -8,26 +8,25 @@ import (
 	"time"
 
 	ftpserver "github.com/fclairamb/ftpserverlib"
-	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/core/gossip"
-	"github.com/ryanolee/ryan-pot/core/gossip/action"
-	"github.com/ryanolee/ryan-pot/core/gossip/handler"
-	"github.com/ryanolee/ryan-pot/core/logging"
-	"github.com/ryanolee/ryan-pot/core/metrics"
-	"github.com/ryanolee/ryan-pot/core/stall"
-	"github.com/ryanolee/ryan-pot/generator"
-	"github.com/ryanolee/ryan-pot/protocol/ftp"
-	ftpDi "github.com/ryanolee/ryan-pot/protocol/ftp/di"
-	"github.com/ryanolee/ryan-pot/protocol/ftp/driver"
-	ftpLogging "github.com/ryanolee/ryan-pot/protocol/ftp/logging"
-	ftpStall "github.com/ryanolee/ryan-pot/protocol/ftp/stall"
-	"github.com/ryanolee/ryan-pot/protocol/ftp/throttle"
-	"github.com/ryanolee/ryan-pot/protocol/http"
-	httpLogger "github.com/ryanolee/ryan-pot/protocol/http/logging"
-	httpStall "github.com/ryanolee/ryan-pot/protocol/http/stall"
-	"github.com/ryanolee/ryan-pot/secrets"
+	"github.com/ryanolee/go-pot/config"
+	"github.com/ryanolee/go-pot/core/gossip"
+	"github.com/ryanolee/go-pot/core/gossip/action"
+	"github.com/ryanolee/go-pot/core/gossip/handler"
+	"github.com/ryanolee/go-pot/core/logging"
+	"github.com/ryanolee/go-pot/core/metrics"
+	"github.com/ryanolee/go-pot/core/stall"
+	"github.com/ryanolee/go-pot/generator"
+	"github.com/ryanolee/go-pot/protocol/ftp"
+	ftpDi "github.com/ryanolee/go-pot/protocol/ftp/di"
+	"github.com/ryanolee/go-pot/protocol/ftp/driver"
+	ftpLogging "github.com/ryanolee/go-pot/protocol/ftp/logging"
+	ftpStall "github.com/ryanolee/go-pot/protocol/ftp/stall"
+	"github.com/ryanolee/go-pot/protocol/ftp/throttle"
+	"github.com/ryanolee/go-pot/protocol/http"
+	httpLogger "github.com/ryanolee/go-pot/protocol/http/logging"
+	httpStall "github.com/ryanolee/go-pot/protocol/http/stall"
+	"github.com/ryanolee/go-pot/secrets"
 	"go.uber.org/fx"
-	"go.uber.org/fx/fxevent"
 
 	//"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
@@ -121,14 +120,16 @@ func CreateContainer(conf *config.Config) *fx.App {
 
 		// Start HTTP server
 		fx.Invoke(func(c *config.Config, s *http.Server) {
+			fmt.Println("HTTP Server Enabled: ", !conf.Server.Disable)
 			if conf.Server.Disable {
 				zap.L().Info("Http is disabled")
 				return
 			}
-			zap.L().Info("Starting Http server", zap.Int("port", s.ListenPort), zap.String("host", s.ListenHost))
+			fmt.Println("Starting Http server", zap.Int("port", s.ListenPort), zap.String("host", s.ListenHost))
 			go func() {
 				if err := s.Start(); err != nil {
-					zap.L().Sugar().Fatalf("Failed to start Http server", "error", err)
+					zap.L().Fatal("Failed to start Http server", zap.Error(err))
+					os.Exit(1)
 				}
 			}()
 		}),
@@ -147,11 +148,11 @@ func CreateContainer(conf *config.Config) *fx.App {
 			}()
 		}),
 
-		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
-			if !conf.Logging.StartUpLogEnabled {
-				return &fxevent.ZapLogger{Logger: zap.NewNop()}
-			}
-			return &fxevent.ZapLogger{Logger: log}
-		}),
+		//fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
+		//	if !conf.Logging.StartUpLogEnabled {
+		//		return &fxevent.ZapLogger{Logger: zap.NewNop()}
+		//	}
+		//	return &fxevent.ZapLogger{Logger: log}
+		//}),
 	)
 }

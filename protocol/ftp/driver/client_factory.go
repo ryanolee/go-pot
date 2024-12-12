@@ -5,8 +5,8 @@ import (
 	"sync/atomic"
 
 	ftpserver "github.com/fclairamb/ftpserverlib"
-	"github.com/ryanolee/ryan-pot/protocol/ftp/di"
-	"github.com/ryanolee/ryan-pot/rand"
+	"github.com/ryanolee/go-pot/protocol/ftp/di"
+	"github.com/ryanolee/go-pot/rand"
 )
 
 type FtpClientDriverFactory struct {

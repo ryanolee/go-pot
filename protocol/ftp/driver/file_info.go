@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/ryanolee/ryan-pot/generator/filesystem"
+	"github.com/ryanolee/go-pot/generator/filesystem"
 	"go.uber.org/zap"
 )
 

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ryanolee/ryan-pot/config"
+	"github.com/ryanolee/go-pot/config"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )

@@ -1,6 +1,13 @@
+version: 2
 builds:
   -
     id: "go-pot"
     binary: "go-pot"
     env:
       - CGO_ENABLED=0
+    ldflags:
+      - "-s -w"
+      - "-X 'github.com/ryanolee/go-pot/cmd.version={{.Version}}'"
+      - "-X 'github.com/ryanolee/go-pot/cmd.commitHash={{.Commit}}'"
+      - "-X 'github.com/ryanolee/go-pot/cmd.buildDate={{.Date}}'"
+    

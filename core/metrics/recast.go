@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/rand"
+	"github.com/ryanolee/go-pot/config"
+	"github.com/ryanolee/go-pot/rand"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )

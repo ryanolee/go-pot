@@ -4,13 +4,13 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/core/metrics"
-	"github.com/ryanolee/ryan-pot/core/stall"
-	"github.com/ryanolee/ryan-pot/generator"
-	"github.com/ryanolee/ryan-pot/generator/encoder"
-	"github.com/ryanolee/ryan-pot/protocol/http/logging"
-	"github.com/ryanolee/ryan-pot/secrets"
+	"github.com/ryanolee/go-pot/config"
+	"github.com/ryanolee/go-pot/core/metrics"
+	"github.com/ryanolee/go-pot/core/stall"
+	"github.com/ryanolee/go-pot/generator"
+	"github.com/ryanolee/go-pot/generator/encoder"
+	"github.com/ryanolee/go-pot/protocol/http/logging"
+	"github.com/ryanolee/go-pot/secrets"
 )
 
 type HttpStallerFactory struct {

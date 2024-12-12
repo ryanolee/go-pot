@@ -1,8 +1,8 @@
 package generator
 
 import (
-	"github.com/ryanolee/ryan-pot/generator/encoder"
-	"github.com/ryanolee/ryan-pot/secrets"
+	"github.com/ryanolee/go-pot/generator/encoder"
+	"github.com/ryanolee/go-pot/secrets"
 )
 
 type Generator interface {

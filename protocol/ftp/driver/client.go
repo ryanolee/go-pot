@@ -6,9 +6,9 @@ import (
 	"time"
 
 	ftpserver "github.com/fclairamb/ftpserverlib"
-	"github.com/ryanolee/ryan-pot/generator/filesystem"
-	"github.com/ryanolee/ryan-pot/protocol/ftp/di"
-	"github.com/ryanolee/ryan-pot/protocol/ftp/logging"
+	"github.com/ryanolee/go-pot/generator/filesystem"
+	"github.com/ryanolee/go-pot/protocol/ftp/di"
+	"github.com/ryanolee/go-pot/protocol/ftp/logging"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )

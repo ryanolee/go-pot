@@ -3,10 +3,10 @@ package encoder
 import (
 	"strings"
 
-	"github.com/ryanolee/ryan-pot/generator/source"
+	"github.com/ryanolee/go-pot/generator/source"
 )
 
-type SqlEncoder struct {}
+type SqlEncoder struct{}
 
 func NewSqlEncoder() *SqlEncoder {
 	return &SqlEncoder{}
@@ -35,4 +35,3 @@ func (*SqlEncoder) GetSupportedGenerator() string {
 func (e *SqlEncoder) Marshal(v interface{}) ([]byte, error) {
 	return []byte("(`" + strings.Join(source.GetTabularFieldValues(), "`, `") + "`)"), nil
 }
-

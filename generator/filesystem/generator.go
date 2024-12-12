@@ -5,7 +5,7 @@ import (
 
 	mRand "math/rand"
 
-	"github.com/ryanolee/ryan-pot/rand"
+	"github.com/ryanolee/go-pot/rand"
 )
 
 var fileExtensions = []string{

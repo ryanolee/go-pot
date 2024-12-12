@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/ryanolee/ryan-pot/core/metrics"
-	"github.com/ryanolee/ryan-pot/core/stall"
-	"github.com/ryanolee/ryan-pot/generator"
+	"github.com/ryanolee/go-pot/core/metrics"
+	"github.com/ryanolee/go-pot/core/stall"
+	"github.com/ryanolee/go-pot/generator"
 	"go.uber.org/zap"
 )
 
