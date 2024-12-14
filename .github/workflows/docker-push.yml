@@ -40,6 +40,9 @@ jobs:
       - name: Get current date
         id: date
         run: echo "::set-output name=date::$(date +'%Y-%m-%d-%H-%M-%S')"
+      - name: Get Current Version
+        id: version
+        run: echo "::set-output name=version::$(echo $GITHUB_REF | cut -d / -f 3)"
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
@@ -52,7 +55,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             COMMIT=${{ github.sha }}
-            VERSION=${{ github.ref }}
+            VERSION=${{ steps.version.outputs.version }}
             DATE=${{ steps.date.outputs.date }}
       
       - name: Generate artifact attestation
