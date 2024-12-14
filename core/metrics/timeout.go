@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
-	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/core/gossip/action"
+	"github.com/ryanolee/go-pot/config"
+	"github.com/ryanolee/go-pot/core/gossip/action"
 	"go.uber.org/zap"
 )
 
@@ -59,13 +59,13 @@ type (
 		graceRequests int
 
 		// The timeout we will give to requests that are allowed to pass the grace period
-	    graceTimeout time.Duration
+		graceTimeout time.Duration
 
 		// The amount of time to wait when hanging an IP "forever"
 		longestTimeout time.Duration
 
 		// The number of samples to take to detect a timeout
-		sampleSize 	int
+		sampleSize int
 
 		// How close the standards need to be on average to move the IP address into the "Endless stall" category
 		sampleDeviation time.Duration
@@ -80,31 +80,29 @@ type (
 	// Struct representing the traffic for a given IP address
 	TimeoutForIp struct {
 		// Options for the timeout watcher associated with this IP Timeout
-		opts              	*TimeoutWatcherOptions
+		opts *TimeoutWatcherOptions
 
 		// Mutex for sync operations relating to the given IP
-		mutex                sync.RWMutex
+		mutex sync.RWMutex
 
 		// The number of requests that have been made by an given IP to this node
-		Requests             int
+		Requests int
 
 		// The duration of the last N timeouts that finished successfully
-		ValidTimeouts        []time.Duration
+		ValidTimeouts []time.Duration
 
 		// The duration of the last N timeouts that finished with a client timeout
-		InvalidTimeouts      []time.Duration
+		InvalidTimeouts []time.Duration
 
 		// The duration of the last valid timeout
-		LastValidTimeout     time.Duration
+		LastValidTimeout time.Duration
 
 		// The duration of the last invalid timeout
-		LastInvalidTimeout   time.Duration
+		LastInvalidTimeout time.Duration
 
 		// The duration of the last timeout that was attempted
 		LastPerformedTimeout time.Duration
 	}
-
-	
 )
 
 func NewTimeoutForIp(opts *TimeoutWatcherOptions) *TimeoutForIp {
@@ -207,9 +205,9 @@ func NewTimeoutWatcher(config *config.Config) *TimeoutWatcher {
 
 	return &TimeoutWatcher{
 		actionDispatcher: nil,
-		hotCachePool:  cache.New(time.Duration(twConfig.CacheHotPoolTTL) * time.Second, time.Minute),
-		coldCachePool: cache.New(time.Duration(twConfig.CacheColdPoolTTL) * time.Second, time.Hour),
-		
+		hotCachePool:     cache.New(time.Duration(twConfig.CacheHotPoolTTL)*time.Second, time.Minute),
+		coldCachePool:    cache.New(time.Duration(twConfig.CacheColdPoolTTL)*time.Second, time.Hour),
+
 		// Map options from config to TimeoutWatcherOptions
 		opts: &TimeoutWatcherOptions{
 			instantCommitThreshold:     time.Duration(twConfig.InstantCommitThreshold) * time.Millisecond,
@@ -334,4 +332,3 @@ func (tw *TimeoutWatcher) GetTimeout(identifier string) time.Duration {
 
 	return timeout
 }
-

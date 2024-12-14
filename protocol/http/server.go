@@ -9,9 +9,9 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/protocol/http/logging"
-	"github.com/ryanolee/ryan-pot/protocol/http/stall"
+	"github.com/ryanolee/go-pot/config"
+	"github.com/ryanolee/go-pot/protocol/http/logging"
+	"github.com/ryanolee/go-pot/protocol/http/stall"
 )
 
 type (

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ryanolee/ryan-pot/core/gossip/action"
-	"github.com/ryanolee/ryan-pot/core/metrics"
+	"github.com/ryanolee/go-pot/core/gossip/action"
+	"github.com/ryanolee/go-pot/core/metrics"
 	"go.uber.org/zap"
 )
 

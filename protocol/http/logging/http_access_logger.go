@@ -8,7 +8,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/ryanolee/ryan-pot/config"
+	"github.com/ryanolee/go-pot/config"
 	"github.com/ua-parser/uap-go/uaparser"
 	"go.uber.org/zap"
 )

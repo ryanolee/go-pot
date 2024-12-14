@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/di"
+	"github.com/ryanolee/go-pot/config"
+	"github.com/ryanolee/go-pot/di"
 	"github.com/spf13/cobra"
 )
 

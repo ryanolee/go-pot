@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	ftpserver "github.com/fclairamb/ftpserverlib"
-	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/protocol/ftp/logging"
-	"github.com/ryanolee/ryan-pot/protocol/ftp/throttle"
+	"github.com/ryanolee/go-pot/config"
+	"github.com/ryanolee/go-pot/protocol/ftp/logging"
+	"github.com/ryanolee/go-pot/protocol/ftp/throttle"
 	"go.uber.org/zap"
 )
 

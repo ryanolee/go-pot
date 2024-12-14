@@ -5,10 +5,10 @@ import (
 	"encoding/csv"
 	"strings"
 
-	"github.com/ryanolee/ryan-pot/generator/source"
+	"github.com/ryanolee/go-pot/generator/source"
 )
 
-type CsvEncoder struct {}
+type CsvEncoder struct{}
 
 func NewCsvEncoder() *CsvEncoder {
 	return &CsvEncoder{}

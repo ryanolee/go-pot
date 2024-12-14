@@ -11,7 +11,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ryanolee/ryan-pot/config"
+	"github.com/ryanolee/go-pot/config"
 )
 
 // Generates Self Signed Certificate in memory in the event that a certificate is not provided

@@ -1,13 +1,13 @@
 package di
 
 import (
-	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/core/stall"
-	"github.com/ryanolee/ryan-pot/generator"
-	"github.com/ryanolee/ryan-pot/protocol/ftp/logging"
-	ftpStall "github.com/ryanolee/ryan-pot/protocol/ftp/stall"
-	"github.com/ryanolee/ryan-pot/protocol/ftp/throttle"
-	"github.com/ryanolee/ryan-pot/secrets"
+	"github.com/ryanolee/go-pot/config"
+	"github.com/ryanolee/go-pot/core/stall"
+	"github.com/ryanolee/go-pot/generator"
+	"github.com/ryanolee/go-pot/protocol/ftp/logging"
+	ftpStall "github.com/ryanolee/go-pot/protocol/ftp/stall"
+	"github.com/ryanolee/go-pot/protocol/ftp/throttle"
+	"github.com/ryanolee/go-pot/secrets"
 )
 
 // Repository used for passing Dependencies required by

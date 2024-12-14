@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/hashicorp/memberlist"
-	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/core/gossip/action"
-	"github.com/ryanolee/ryan-pot/core/gossip/handler"
+	"github.com/ryanolee/go-pot/config"
+	"github.com/ryanolee/go-pot/core/gossip/action"
+	"github.com/ryanolee/go-pot/core/gossip/handler"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )

@@ -7,10 +7,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ryanolee/ryan-pot/config"
-	stallLib "github.com/ryanolee/ryan-pot/core/stall"
-	"github.com/ryanolee/ryan-pot/generator"
-	"github.com/ryanolee/ryan-pot/generator/encoder"
+	"github.com/ryanolee/go-pot/config"
+	stallLib "github.com/ryanolee/go-pot/core/stall"
+	"github.com/ryanolee/go-pot/generator"
+	"github.com/ryanolee/go-pot/generator/encoder"
 )
 
 // Acts as an IO.reader stream. It generates data using the generator and encoder and sends data in a requested chunk size

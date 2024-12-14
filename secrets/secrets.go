@@ -6,9 +6,9 @@ import (
 	"regexp/syntax"
 	"strings"
 
-	"github.com/ryanolee/ryan-pot/core/metrics"
-	"github.com/ryanolee/ryan-pot/internal/regen"
-	"github.com/ryanolee/ryan-pot/rand"
+	"github.com/ryanolee/go-pot/core/metrics"
+	"github.com/ryanolee/go-pot/internal/regen"
+	"github.com/ryanolee/go-pot/rand"
 	"gopkg.in/yaml.v3"
 
 	"github.com/thoas/go-funk"
@@ -47,7 +47,7 @@ type (
 func NewSecretGeneratorCollection(telemetry *metrics.Telemetry) *SecretGeneratorCollection {
 	return &SecretGeneratorCollection{
 		Generators: GetGenerators(),
-		onGenerate: func(){
+		onGenerate: func() {
 			if telemetry == nil {
 				return
 			}

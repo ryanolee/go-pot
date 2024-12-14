@@ -12,8 +12,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/client_golang/prometheus/push"
 	dto "github.com/prometheus/client_model/go"
-	"github.com/ryanolee/ryan-pot/config"
-	"github.com/ryanolee/ryan-pot/protocol/http/logging"
+	"github.com/ryanolee/go-pot/config"
+	"github.com/ryanolee/go-pot/protocol/http/logging"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )

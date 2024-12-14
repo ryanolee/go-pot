@@ -4,7 +4,7 @@ import (
 	"net"
 
 	ftpserver "github.com/fclairamb/ftpserverlib"
-	"github.com/ryanolee/ryan-pot/config"
+	"github.com/ryanolee/go-pot/config"
 	"go.uber.org/zap"
 )
 

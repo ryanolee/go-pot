@@ -1,23 +1,23 @@
 package generator
 
 import (
-	"github.com/ryanolee/ryan-pot/generator/encoder"
-	"github.com/ryanolee/ryan-pot/secrets"
+	"github.com/ryanolee/go-pot/generator/encoder"
+	"github.com/ryanolee/go-pot/secrets"
 )
 
 type (
 	ConfigGenerator struct {
-		encoder encoder.Encoder
+		encoder    encoder.Encoder
 		generators *ConfigGeneratorCollection
-		secrets *secrets.SecretGeneratorCollection
+		secrets    *secrets.SecretGeneratorCollection
 	}
 )
 
 func NewConfigGenerator(encoder encoder.Encoder, collection *ConfigGeneratorCollection, secrets *secrets.SecretGeneratorCollection) *ConfigGenerator {
 	return &ConfigGenerator{
-		encoder: encoder,
+		encoder:    encoder,
 		generators: collection,
-		secrets: secrets,
+		secrets:    secrets,
 	}
 }
 
@@ -28,7 +28,7 @@ func (g *ConfigGenerator) Generate() []byte {
 	if err != nil {
 		return nil
 	}
-		
+
 	return data
 }
 
@@ -37,7 +37,7 @@ func (g *ConfigGenerator) Start() []byte {
 }
 
 func (g *ConfigGenerator) GenerateChunk() []byte {
-	return  g.Generate()
+	return g.Generate()
 }
 
 func (g *ConfigGenerator) ChunkSeparator() []byte {

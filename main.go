@@ -1,6 +1,6 @@
 package main
 
-import "github.com/ryanolee/ryan-pot/cmd"
+import "github.com/ryanolee/go-pot/cmd"
 
 func main() {
 	cmd.Execute()
