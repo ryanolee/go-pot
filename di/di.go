@@ -91,6 +91,12 @@ func CreateContainer(conf *config.Config) *fx.App {
 			// Di Repositories
 			ftpDi.NewFtpRepository,
 		),
+
+		// Set Global Logger with the one created in the container
+		fx.Invoke(func(logger *zap.Logger) {
+			zap.ReplaceGlobals(logger)
+		}),
+
 		// Resolve circular dependencies
 		fx.Invoke(func(config *config.Config, watcher *metrics.TimeoutWatcher, dispatcher action.IBroadcastActionDispatcher) {
 			if config.Cluster.Enabled && config.TimeoutWatcher.Enabled {
@@ -114,6 +120,7 @@ func CreateContainer(conf *config.Config) *fx.App {
 
 				time.Sleep(time.Second * 30)
 				zap.L().Info("Deadline has passed after 30 seconds, Forcing shutdown.")
+				zap.L().Sync()
 				os.Exit(0)
 			}()
 		}),
@@ -129,7 +136,6 @@ func CreateContainer(conf *config.Config) *fx.App {
 			go func() {
 				if err := s.Start(); err != nil {
 					zap.L().Fatal("Failed to start Http server", zap.Error(err))
-					os.Exit(1)
 				}
 			}()
 		}),
