@@ -119,9 +119,7 @@ func CreateContainer(conf *config.Config) *fx.App {
 				}
 
 				time.Sleep(time.Second * 30)
-				zap.L().Info("Deadline has passed after 30 seconds, Forcing shutdown.")
-				zap.L().Sync()
-				os.Exit(0)
+				zap.L().Sugar().Fatal("Deadline has passed after 30 seconds, Forcing shutdown.")
 			}()
 		}),
 
