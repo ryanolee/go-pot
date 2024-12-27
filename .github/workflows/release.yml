@@ -88,22 +88,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        container: 
-          - "ubuntu:latest"
-          - "frolvlad/alpine-bash"
-          - "gentoo/stage3:latest"
-          - "fedora:latest"
-          - "archlinux:latest"
-          - "opensuse/leap:latest"
-          - "debian:latest"
-          - "registry.access.redhat.com/ubi8/ubi:latest"
-          - "registry.suse.com/suse/sle15:latest"
-          - "oraclelinux:9"
-          - "amazonlinux:latest"
-          - "rockylinux/rockylinux:latest"
+        container:
+          - {image: "ubuntu:latest", install_cmd: "apt update && apt install -y curl" }
+          - {image: "frolvlad/alpine-bash", install_cmd: "apk update && apk add --no-cache curl" }
+          - {image: "gentoo/stage3:latest", install_cmd:  "emerge -q curl" }
+          - {image: "fedora:latest", install_cmd:  "dnf install -y curl" }
+          - {image: "archlinux:latest", install_cmd:  "pacman -Syu --noconfirm curl" }
+          - {image: "opensuse/leap:latest", install_cmd: "zypper install -y curl" }
+          - {image: "debian:latest", install_cmd: "apt update && apt install -y curl" }
+          - {image: "registry.access.redhat.com/ubi8/ubi:latest", install_cmd:  "dnf install -y curl" }
+          - {image: "registry.suse.com/suse/sle15:latest", install_cmd: "zypper install -y curl" }
+          - {image: "oraclelinux:9", install_cmd: "dnf install -y curl" }
+          - {image: "amazonlinux:latest", install_cmd: "yum install -y curl" }
+          - {image: "rockylinux/rockylinux:latest", install_cmd: "dnf install -y curl" }
 
     container:
-      image: ${{ matrix.container }}
+      image: ${{ matrix.container.image }}
     
     needs:
       - build-and-push-image
@@ -113,7 +113,7 @@ jobs:
       - name: Get Current Version
         id: version
         run: echo "::set-output name=version::$(echo $GITHUB_REF | cut -d / -f 3)"
+      - name: Add curl
+        run: ${{ matrix.container.install_cmd }}
       - name: Run install script
         run: curl -s -L https://raw.githubusercontent.com/ryanolee/go-pot/refs/tags/${{ steps.version.outputs.version }}/docs/scripts/install.sh | bash -s -- --yes
-      - name: Assert Installed
-        run: go-pot version

@@ -156,7 +156,7 @@ find_package_manager_and_install() {
     dnf check-update || true # DNF returns 100 if there are updates that can be made, so we ignore the return code
 
     # Install curl and tar
-    dnf install -y curl tar
+    dnf install -y --skip-broken curl tar gzip
   # Red Hat based systems
   elif command -v yum &> /dev/null
   then
@@ -183,13 +183,13 @@ find_package_manager_and_install() {
     zypper refresh
 
     # Install curl and tar
-    zypper install -y curl tar
+    zypper install -y curl tar gzip
 # Alpine based systems
   elif command -v apk &> /dev/null
   then
     # Update package list
     echo "Updating package list for apk..."
-    apk update
+    apk update 
 
     # Install curl and tar
     apk add curl tar
@@ -219,7 +219,7 @@ find_package_manager_and_install() {
     emerge --sync
 
     # Install curl and tar
-    emerge -av curl tar
+    emerge -av curl tar 
   else
     echo "No package manager found. Tried apt-get, apt, yum, dnf, pacman, zypper, apk, brew, pkg, emerge. Please install curl and tar manually or through your package manager of choice."
   fi
