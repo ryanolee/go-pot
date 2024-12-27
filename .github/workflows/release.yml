@@ -87,6 +87,7 @@ jobs:
   test-release-script:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         container:
           - {image: "ubuntu:latest", install_cmd: "apt update && apt install -y curl" }
