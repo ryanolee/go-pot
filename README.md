@@ -30,7 +30,7 @@ Then visit `http://localhost:8080` in your browser to see the go-pot in action. 
 
 ### Script
 >[!CAUTION]
-> Scripts should **never** be runs from unknown sources before checking the contents and understanding what they do. The following script is provided as a convenience and is safe to run. [However please review the contents of the script before running it.](https://raw.githubusercontent.com/ryanolee/go-pot/main/docs/scripts/install.sh)
+> Scripts should **never** be ran from unknown sources. The following script is provided as a convenience and is safe to run. [However please review the contents of the script before running it.](https://raw.githubusercontent.com/ryanolee/go-pot/main/docs/scripts/install.sh)
 
 To install go pot you can run the following script 
 ```bash
