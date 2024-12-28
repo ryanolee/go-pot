@@ -8,7 +8,6 @@
 
 
 
-
 # Set Script to fail if any command fails.
 # This incluides any command in a pipeline.
 # See https://gist.github.com/mohanpedala/1e2ff5661761d3abd0385e8223e16425?permalink_comment_id=3945021 for more information.
@@ -22,7 +21,7 @@ set -eo pipefail
 # -y or --yes flag for automatic yes to prompts
 # -s or --service flag for automatic service installation
 
-# Parse the arguments
+# Parse the arguments passed to the script
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -h|--help)
@@ -90,6 +89,8 @@ confirm_interactive() {
 #  Download pre conditions #
 ############################
 
+# This function checks if go-pot is already installed and asks the user if they want to overwrite it
+# with a newer version if it is already installed. (or skip the installation if it is already at the latest version)
 check_existing_go_pot() {
   # Check if go-pot is already installed
   if command -v go-pot &> /dev/null
@@ -104,14 +105,15 @@ check_existing_go_pot() {
   fi
 }
 
+# This function checks if the script is running as root
+# in the event it is not it asks the user if they would like to rerun the script as root
 assert_running_as_root() {
   # Check if the script is running as root
   if [ "$(id -u)" -ne 0 ]
   then
-    echo "This script must be run as root in order to install go-pot correctly in you path with required dependencies."
-    echo "It is understandable that you may not want to run this script as root however so if not..."
-    echo "If you would like to install go-pot without root access, please download the latest release from https://github.com/${REPO_URL}/releases/download"
-    echo "and install it manually into your path. (Or use the go-pot docker image!)"
+    echo "This script must be run as root in order to install go-pot correctly."
+    echo "If you would prefer not to run this script as root, you can install go-pot manually by downloading the latest release from https://github.com/${REPO_URL}/releases/download"
+    echo "Or use the docker image: docker run --rm -it ryanolee/go-pot:latest [COMMAND]"
     confirm_interactive "Would you like to rerun this script as root? (y/N): "
 
     # Rerun the script as root if the user inputs 'y' or 'Y'
@@ -257,6 +259,17 @@ move_go_pot_to_bin() {
 ###############
 # Main Script #
 ###############
+
+# This is the main script that runs the installation process for go-pot.
+# It takes the following steps:
+# 1. Checks the script is running a root and attempts to elevate permissions if not.
+# 2. Check for required dependencies and installed and will try to install if they are not present (curl, tar)
+# 3. Determine the system architecture and platform to download the correct release of go-pot.
+# 4. Fetch the latest release of go-pot from the GitHub repository and check it against the current version if it is already installed.
+# 5. Download the latest release of go-pot to /tmp and extract it.
+# 6. Move the go-pot binary to /usr/local/bin.
+# 7. Print the version of go-pot installed.
+
 echo "Checking for required dependencies..."
 
 # Call the function to install dependencies if they are missing

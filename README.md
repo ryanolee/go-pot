@@ -14,7 +14,7 @@ A HTTP tarpit written in Go designed to maximize bot misery through very slowly 
 ## Installation
 Go pot is distributed as a standalone go binary or docker image. You can download the latest release from the [releases page](https://github.com/ryanolee/go-pot/releases). Docker images are available on the [ghcr.io registry](https://github.com/ryanolee/go-pot/pkgs/container/go-pot).
 
-### Docker
+### Docker (Recommended 🌟)
 In order to run an example instance of go-pot using docker, you can use the following command:
 ```bash
 docker run -p 8080:8080 --rm ghcr.io/ryanolee/go-pot:latest start --host=0.0.0.0 --port=8080
@@ -27,6 +27,15 @@ In order to run go-pot as a standalone binary, you can download the latest relea
 ./go-pot start
 ```
 Then visit `http://localhost:8080` in your browser to see the go-pot in action. ( Visiting `http://localhost:8080/somthing.xml`, `http://localhost:8080/someething.sql` ect.. will start generating data in the respective format)
+
+### Script
+>[!CAUTION]
+> Scripts should **never** be runs from unknown sources before checking the contents and understanding what they do. The following script is provided as a convenience and is safe to run. [However please review the contents of the script before running it.](https://raw.githubusercontent.com/ryanolee/go-pot/main/docs/scripts/install.sh)
+
+To install go pot you can run the following script 
+```bash
+curl -o /tmp/install-go-pot.sh https://raw.githubusercontent.com/ryanolee/go-pot/main/docs/scripts/install.sh && bash /tmp/install-go-pot.sh && rm /tmp/install-go-pot.sh
+```
 
 ## Usage
 Please refer to the [examples](examples/) folder for examples of how go pot can be used.
