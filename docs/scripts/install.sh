@@ -214,12 +214,9 @@ find_package_manager_and_install() {
   elif command -v emerge &> /dev/null
   then
     # Gentoo
-    # Update package list
-    echo "Updating package list for emerge..."
-    emerge --sync
 
     # Install curl and tar
-    emerge -av curl tar 
+    emerge curl tar 
   else
     echo "No package manager found. Tried apt-get, apt, yum, dnf, pacman, zypper, apk, brew, pkg, emerge. Please install curl and tar manually or through your package manager of choice."
   fi
