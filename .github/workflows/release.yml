@@ -84,7 +84,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
-  test-release-script:
+  test-release-script-linux-all:
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -92,7 +92,7 @@ jobs:
         container:
           - {image: "ubuntu:latest", install_cmd: "apt update && apt install -y curl" }
           - {image: "frolvlad/alpine-bash", install_cmd: "apk update && apk add --no-cache curl" }
-          - {image: "gentoo/stage3:latest", install_cmd:  "emerge --sync && emerge -av curl" }
+          - {image: "gentoo/stage3:latest", install_cmd:  "emerge --sync > /dev/null && emerge curl" }
           - {image: "fedora:latest", install_cmd:  "dnf install -y curl" }
           - {image: "archlinux:latest", install_cmd:  "pacman -Syu --noconfirm curl" }
           - {image: "opensuse/leap:latest", install_cmd: "zypper install -y curl" }
@@ -100,7 +100,7 @@ jobs:
           - {image: "registry.access.redhat.com/ubi8/ubi:latest", install_cmd:  "dnf install -y curl" }
           - {image: "registry.suse.com/suse/sle15:latest", install_cmd: "zypper install -y curl" }
           - {image: "oraclelinux:9", install_cmd: "dnf install -y curl" }
-          - {image: "amazonlinux:latest", install_cmd: "dnf install -y --skip-broken curl tar gzip" }
+          - {image: "amazonlinux:latest", install_cmd: "dnf install -y --skip-broken curl" }
           - {image: "rockylinux/rockylinux:latest", install_cmd: "dnf install -y curl" }
 
     container:
