@@ -32,7 +32,7 @@ type (
 		// The channel to shutdown listeners for broadcast actions
 		shutdownChan chan bool
 
-		// The handler for broadcast actions. Is used to recieve events. Parse them and act upon them.
+		// The handler for broadcast actions. Is used to receive events. Parse them and act upon them.
 		handler handler.IBroadcastActionHandler
 
 		// The number of connection attempts to make to other nodes in the cluster before giving up
