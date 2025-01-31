@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/knadh/koanf/providers/env"
@@ -14,6 +15,7 @@ type (
 	Config struct {
 		Server         serverConfig         `koanf:"server"`
 		FtpServer      ftpServerConfig      `koanf:"ftp_server"`
+		MultiProtocol  multiProtocolConfig  `koanf:"multi_protocol"`
 		Logging        loggingConfig        `koanf:"logging"`
 		Cluster        clusterConfig        `koanf:"cluster"`
 		TimeoutWatcher timeoutWatcherConfig `koanf:"timeout_watcher"`
@@ -22,13 +24,28 @@ type (
 		Staller        stallerConfig        `koanf:"staller"`
 	}
 
+	// Multi protocol configuration
+	multiProtocolConfig struct {
+		// If the multi protocol server should be started or not
+		Enabled bool `koanf:"enabled"`
+
+		// The port to listen on.
+		Port int `koanf:"port" validate:"required,min=1,max=65535,no_duplicate_port"`
+
+		// The protocol detectors to use
+		Host string `koanf:"host" validate:"omitempty"`
+
+		// The protocol detectors to use
+		Protocols []string `koanf:"protocols" validate:"required,dive,oneof=http ftp all"`
+	}
+
 	// Server specific configuration
 	serverConfig struct {
 		// If the http server should be disabled
 		Disable bool `koanf:"disable"`
 
 		// Server port to listen on
-		Port int `koanf:"port" validate:"required,min=1,max=65535"`
+		Port int `koanf:"port" validate:"required,min=1,max=65535,no_duplicate_port"`
 
 		// Server host to listen on
 		Host string `koanf:"host" validate:"required"`
@@ -74,13 +91,13 @@ type (
 
 		// The port to listen on N.b this is the control port
 		// port 20 is used for data transfer by default in active mode.
-		Port int `koanf:"port" validate:"required,min=1,max=65535"`
+		Port int `koanf:"port" validate:"required,min=1,max=65535,no_duplicate_port"`
 
 		// Host to listen on
 		Host string `koanf:"host" validate:"required"`
 
 		// Lower bound of ports exposed for passive mode default 50000-50100
-		PassivePortRange string `koanf:"passive_port_range" validate:"omitempty,port_range"`
+		PassivePortRange string `koanf:"passive_port_range" validate:"omitempty,port_range,no_duplicate_port_range"`
 
 		// The common name for the self signed certificate
 		CertCommonName string `koanf:"cert_common_name" validate:"omitempty"`
@@ -121,7 +138,7 @@ type (
 		Mode string `koanf:"mode" validate:"required_if=Enabled true,omitempty,oneof=fargate_ecs lan wan"`
 
 		// The bind address for the cluster to listen on
-		BindPort int `koanf:"bind_port" validate:"required_if=Enabled true,omitempty,min=1,max=65535"`
+		BindPort int `koanf:"bind_port" validate:"required_if=Enabled true,omitempty,min=1,max=65535,no_duplicate_port"`
 
 		// Known Peers
 		KnownPeerIps []string `koanf:"known_peer_ips" validate:"required_if=Mode lan Mode wan,omitempty"`
@@ -240,7 +257,7 @@ type (
 		Enabled bool `koanf:"enabled"`
 
 		// The port for the prometheus collection endpoint
-		Port int `koanf:"prometheus_port" validate:"required,min=1,max=65535"`
+		Port int `koanf:"prometheus_port" validate:"required,min=1,max=65535,no_duplicate_port"`
 
 		// The path for the prometheus endpoint
 		Path string `koanf:"prometheus_path" validate:"required"`
@@ -341,6 +358,29 @@ func NewConfig(cmd *cobra.Command, flagsUsed flagMap) (*Config, error) {
 	setStringSlice(k, "server.access_log.fields_to_log")
 	setStringSlice(k, "ftp_server.command_log.commands_to_log")
 	setStringSlice(k, "ftp_server.command_log.additional_fields")
+	setStringSlice(k, "multi_protocol.protocols")
+
+	// Implicitly enable each server type if specific configuration changes have been made to the default configuration
+	if err := setIfNotDefault(k, "ftp_server.enabled", true, map[string]interface{}{
+		"ftp_server.port": defaultConfig.FtpServer.Port,
+		"ftp_server.host": defaultConfig.FtpServer.Host,
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := setIfNotDefault(k, "server.disable", false, map[string]interface{}{
+		"server.port": defaultConfig.Server.Port,
+		"server.host": defaultConfig.Server.Host,
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := setIfNotDefault(k, "multi_protocol.enabled", false, map[string]interface{}{
+		"multi_protocol.port": defaultConfig.MultiProtocol.Port,
+		"multi_protocol.host": defaultConfig.MultiProtocol.Host,
+	}); err != nil {
+		return nil, err
+	}
 
 	var cfg *Config
 	if err := k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "koanf"}); err != nil {
@@ -377,4 +417,26 @@ func setStringSlice(k *koanf.Koanf, key string) {
 	} else {
 		k.Delete(key)
 	}
+}
+
+// In the event any of the given flags are not set to the given default value then the target key will be set to the target state
+func setIfNotDefault(k *koanf.Koanf, targetKey string, targetState interface{}, configToCheckForChanges map[string]interface{}) error {
+	// Assert that the desired key exists
+	if !k.Exists(targetKey) {
+		return fmt.Errorf("key %s does not exist when trying to set implicitly", targetKey)
+	}
+
+	// If the key is not the default value then we don't need to do anything
+	if k.Get(targetKey) == targetState {
+		return nil
+	}
+
+	for key, value := range configToCheckForChanges {
+		if k.Get(key) != value {
+			k.Set(targetKey, targetState)
+			return nil
+		}
+	}
+
+	return nil
 }

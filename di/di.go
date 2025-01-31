@@ -16,6 +16,9 @@ import (
 	"github.com/ryanolee/go-pot/core/metrics"
 	"github.com/ryanolee/go-pot/core/stall"
 	"github.com/ryanolee/go-pot/generator"
+	"github.com/ryanolee/go-pot/protocol/detect"
+	"github.com/ryanolee/go-pot/protocol/detect/detector"
+	"github.com/ryanolee/go-pot/protocol/fallback"
 	"github.com/ryanolee/go-pot/protocol/ftp"
 	ftpDi "github.com/ryanolee/go-pot/protocol/ftp/di"
 	"github.com/ryanolee/go-pot/protocol/ftp/driver"
@@ -35,8 +38,8 @@ import (
 // Creates the dependency injection container for the application
 func CreateContainer(conf *config.Config) *fx.App {
 
-	if !conf.FtpServer.Enabled && conf.Server.Disable {
-		fmt.Print("Both FTP and HTTP servers are disabled. There is nothing to do. Exiting.")
+	if !conf.FtpServer.Enabled && !conf.MultiProtocol.Enabled && conf.Server.Disable {
+		fmt.Println("All honeypots disabled. There is nothing to do. Exiting.")
 		os.Exit(0)
 	}
 
@@ -73,6 +76,16 @@ func CreateContainer(conf *config.Config) *fx.App {
 				fx.As(new(gossip.IMemberlist)),
 			),
 
+			// Detectors
+			fx.Annotate(detector.NewHttpDetector, fx.As(new(detector.ProtocolDetector)), fx.ResultTags(`group:"detectors"`)),
+			fx.Annotate(detector.NewFtpDetector, fx.As(new(detector.ProtocolDetector)), fx.ResultTags(`group:"detectors"`)),
+
+			// Multi Protocol Listener
+			fx.Annotate(detect.NewMulitProtocolListener, fx.ParamTags(``, `group:"detectors"`)),
+
+			// Fallback Server
+			fallback.NewFallbackProtocolServer,
+
 			// Http Server
 			http.NewServer,
 			fx.Annotate(
@@ -105,49 +118,82 @@ func CreateContainer(conf *config.Config) *fx.App {
 		}),
 
 		// Shutdown hook
-		fx.Invoke(func(shutdown fx.Shutdowner) {
+		fx.Invoke(func(shutdown fx.Shutdowner, pool *stall.StallerPool, logger *zap.Logger) {
 			go func() {
 				shutdownChannel := make(chan os.Signal, 1)
 
 				signal.Notify(shutdownChannel, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
 				<-shutdownChannel
-				zap.L().Info("Shutting down...")
+
+				logger.Warn("Shutting down...")
+
+				// Stop pool before normal FX lifecycle hook so that all active connections are closed
+				logger.Info("Flushing stall pool")
+				pool.Stop()
+
 				err := shutdown.Shutdown()
 				if err != nil {
-					zap.L().Sugar().Fatalf("Error shutting down, Forcing shutdown", zap.Error(err))
+					logger.Sugar().Fatalf("Error shutting down, Forcing shutdown", zap.Error(err))
 				}
 
 				time.Sleep(time.Second * 30)
-				zap.L().Sugar().Fatal("Deadline has passed after 30 seconds, Forcing shutdown.")
+				logger.Error("Deadline has passed after 30 seconds, Forcing shutdown.")
+				os.Exit(0)
 			}()
 		}),
 
 		// Start HTTP server
-		fx.Invoke(func(c *config.Config, s *http.Server) {
-			zap.L().Info("HTTP Server Enabled: ", zap.Bool("enabled", !conf.Server.Disable))
-			if conf.Server.Disable {
-				zap.L().Info("Http is disabled")
+		fx.Invoke(func(c *config.Config, s *http.Server, logger *zap.Logger, mlp *detect.MultiProtocolListener) {
+			logger.Info("HTTP Server Enabled: ", zap.Bool("enabled", !conf.Server.Disable))
+			if conf.Server.Disable && !mlp.ProtocolEnabled("http") {
+				logger.Info("Http is disabled")
 				return
 			}
-			zap.L().Info("Starting Http server", zap.Int("port", s.ListenPort), zap.String("host", s.ListenHost))
+			logger.Info("Starting Http server",
+				zap.Int("port", s.ListenPort),
+				zap.String("host", s.ListenHost),
+				zap.Bool("managed_by_multi_protocol_listener", mlp.ProtocolEnabled("http")),
+			)
 			go func() {
 				if err := s.Start(); err != nil {
-					zap.L().Fatal("Failed to start Http server", zap.Error(err))
+					logger.Fatal("Failed to start Http server", zap.Error(err))
+					os.Exit(1)
 				}
 			}()
 		}),
 
 		// Start Ftp server
-		fx.Invoke(func(c *config.Config, s *ftpserver.FtpServer) {
-			if !conf.FtpServer.Enabled {
-				zap.L().Info("Ftp is disabled")
+		fx.Invoke(func(c *config.Config, s *ftpserver.FtpServer, logger *zap.Logger, mlp *detect.MultiProtocolListener) {
+			if !conf.FtpServer.Enabled && !mlp.ProtocolEnabled("ftp") {
+				logger.Info("Ftp is disabled")
 				return
 			}
-			zap.L().Info("Starting Ftp server", zap.Int("port", c.FtpServer.Port), zap.String("host", c.FtpServer.Host), zap.String("passive_port_range", c.FtpServer.PassivePortRange))
+
+			logger.Info("Starting Ftp server",
+				zap.Int("port", c.FtpServer.Port),
+				zap.String("host", c.FtpServer.Host),
+				zap.String("passive_port_range", c.FtpServer.PassivePortRange),
+				zap.Bool("managed_by_multi_protocol_listener", mlp.ProtocolEnabled("ftp")),
+			)
+
 			go func() {
 				if err := s.ListenAndServe(); err != nil {
-					zap.L().Sugar().Fatalf("Failed to start Ftp server", "error", err)
+					logger.Sugar().Warn("Failed to start Ftp server", "error", err)
+				}
+			}()
+		}),
+
+		// Start multi protocol listener
+		fx.Invoke(func(ls *detect.MultiProtocolListener, conf *config.Config, logger *zap.Logger) {
+			if ls == nil {
+				return
+			}
+
+			logger.Info("Starting Multi Protocol Listener", zap.Int("port", conf.MultiProtocol.Port), zap.String("host", conf.MultiProtocol.Host))
+			go func() {
+				if err := ls.Listen(); err != nil {
+					logger.Sugar().Fatalf("Failed to start Multi Protocol Listener", zap.Error(err))
 				}
 			}()
 		}),

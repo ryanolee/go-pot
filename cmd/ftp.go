@@ -23,7 +23,10 @@ var ftpCommand = &cobra.Command{
 
 		// Make sure only the FTP server is enabled
 		conf.FtpServer.Enabled = true
+
+		// Disable the server and multi protocol
 		conf.Server.Disable = true
+		conf.MultiProtocol.Enabled = false
 
 		di := di.CreateContainer(conf)
 		di.Run()
