@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ryanolee/go-pot/config"
+	"github.com/ryanolee/go-pot/protocol/detect"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
@@ -27,8 +28,8 @@ type FtpThrottle struct {
 	closeChannel chan bool
 }
 
-func NewFtpThrottle(lf fx.Lifecycle, cfg *config.Config) *FtpThrottle {
-	if !cfg.FtpServer.Enabled {
+func NewFtpThrottle(lf fx.Lifecycle, cfg *config.Config, mlp *detect.MultiProtocolListener) *FtpThrottle {
+	if !cfg.FtpServer.Enabled && !mlp.ProtocolEnabled("ftp") {
 		return nil
 	}
 

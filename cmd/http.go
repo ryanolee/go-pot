@@ -21,9 +21,12 @@ var httpCommand = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// Enable the server
+		conf.Server.Disable = false
+
 		// Make sure only the HTTP server is enabled
 		conf.FtpServer.Enabled = false
-		conf.Server.Disable = false
+		conf.MultiProtocol.Enabled = false
 
 		di := di.CreateContainer(conf)
 		di.Run()

@@ -222,6 +222,7 @@ var ftpFlags = flagMap{
 }
 
 var startFlags = flagMap{
+	// @todo - Next Major release [Swap this to be enabled]
 	"http-disabled": {
 		flagName:     "http-disabled",
 		configKey:    "server.disable",
@@ -236,6 +237,36 @@ var startFlags = flagMap{
 		description:  "Enable the FTP service.",
 		configType:   "bool",
 		defaultValue: defaultConfig.FtpServer.Enabled,
+	},
+
+	// Multi-protocol options
+	"multi-protocol": {
+		flagName:     "multi-protocol",
+		configKey:    "multi_protocol.enabled",
+		description:  "Allows for multiple honeypots to bind to the same pot (will override --[protocol]-enabled / --[protocol]-disabled) flags",
+		configType:   "bool",
+		defaultValue: defaultConfig.MultiProtocol.Enabled,
+	},
+	"multi-protocol-port": {
+		flagName:     "multi-protocol-port",
+		configKey:    "multi_protocol.port",
+		description:  "The port to use for the multi protocol. Default(8081). Has no effect unless --multi-protocol specified",
+		configType:   "int",
+		defaultValue: defaultConfig.MultiProtocol.Port,
+	},
+	"multi-protocol-host": {
+		flagName:     "multi-protocol-host",
+		configKey:    "multi_protocol.host",
+		description:  "The host to bin the multi protocol listener to",
+		configType:   "string",
+		defaultValue: defaultConfig.MultiProtocol.Host,
+	},
+	"multi-protocol-protocols": {
+		flagName:     "multi-protocol-protocols",
+		configKey:    "multi_protocol.protocols",
+		description:  "Comma separated list of protocols to enable as part of the 'multi-protocol' listener. Can be one of 'ftp', 'http' or 'all'",
+		configType:   "string",
+		defaultValue: strings.Join(defaultConfig.MultiProtocol.Protocols, ","),
 	},
 }
 

@@ -1,5 +1,5 @@
 # go-pot 🍯
-A HTTP tarpit written in Go designed to maximize bot misery through very slowly feeding them an infinite stream of fake secrets. 
+A Multi Protocol tarpit written in Go designed to maximize bot misery through very slowly feeding them an infinite stream of fake secrets. 
 
 <img src="docs/img/gopher.png" width="400px" />
 
@@ -7,8 +7,8 @@ A HTTP tarpit written in Go designed to maximize bot misery through very slowly 
 - **Realistic output**: Go pot will respond to requests with an infinite stream of realistic looking, parseable structured data full of fake secrets. `xml`, `json`, `yaml`, `hcl`, `toml`, `csv`, `ini`, and `sql` are all supported.
 - **Multiple protocols**: Both `http` and `ftp` are supported out of the box. Each with a tailored implementation. *More protocols are planned.*
 - **Intelligent stalling**: Go pot will attempt to work out how long a bot is willing to wait for a response and stall for exactly that long. This is done gradually making requests slower and slower until a timeout is reached. (Or the bot hangs forever!)
-- **Small Profile**: Go pot can run on extremely low resource machines and is designed to be as lightweight as possible.
-- **Clustering Support**: Go pot can be run in a clustered mode where multiple instances can share information about how long bots are willing to wait for a response. Also in cluster mode nodes can be configured to restart / reallocate IP addresses to avoid being blacklisted by connecting clients.
+- **Small Profile**: Go pot aims to target fairly low end hardware.
+- **Clustering Support**: Go pot can be run in a clustered mode where multiple instances can share information about how long bots are willing to wait for a response. Also in cluster mode nodes can be configured to restart / reallocate IP addresses to avoid being blacklisted by connecting clients. (Currently tested on AWS ECS)
 - **Customizable**: Go pot can be customized to respond with different different response times.
 
 ## Installation

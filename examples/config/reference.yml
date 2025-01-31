@@ -5,6 +5,7 @@
 # Configuration for the go-pot server
 server:
   # If the http staller should be enabled
+  # Implicitly enabled by changing the port or host
   enabled: true
 
   # Port for the go-pot server to listen on
@@ -218,8 +219,8 @@ staller:
 
 # Metric configuration for the FTP side of the staller
 ftp_server:
-
   # If the fep server should be enabled or not
+  # Implicitly enabled by changing the port or host
   enabled: false
 
   # Port the FTP server should bind to
@@ -305,3 +306,23 @@ ftp_server:
     #  - type: always "ftp"
     #  - none: No fields
     additional_fields: "id"
+
+# Enables connection muxing for multiple honeypot protocols to bind to the same port
+# This is useful for when proxying a large number of ports to a single running instance of the honeypot
+multi_protocol:
+  # If the multi protocol server should be enabled or not
+  # Implicitly enabled by changing the port or host
+  enabled: false
+
+  # Port the multi protocol server should bind to
+  port: 2021
+
+  # The host for the go pot server
+  host: 0.0.0.0
+
+  # The supported protocols for the multi protocol server
+  # The following protocols are available:
+  #  - ftp: The FTP protocol (Including FTPS)
+  #  - http: The HTTP protocol
+  #  - all: All available protocols
+  protocols: ['all']

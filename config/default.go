@@ -4,6 +4,12 @@ import "go.uber.org/zap/zapcore"
 
 // Default configuration values for the application
 var defaultConfig = Config{
+	MultiProtocol: multiProtocolConfig{
+		Enabled:   false,
+		Host:      "0.0.0.0",
+		Protocols: []string{"all"},
+		Port:      8081,
+	},
 	Server: serverConfig{
 		Disable:        false,
 		Port:           8080,

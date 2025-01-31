@@ -3,9 +3,11 @@ package driver
 import (
 	"crypto/tls"
 	"fmt"
+	"net"
 
 	ftpserver "github.com/fclairamb/ftpserverlib"
 	"github.com/ryanolee/go-pot/config"
+	"github.com/ryanolee/go-pot/protocol/detect"
 	"github.com/ryanolee/go-pot/protocol/ftp/logging"
 	"github.com/ryanolee/go-pot/protocol/ftp/throttle"
 	"go.uber.org/zap"
@@ -22,7 +24,12 @@ type FtpServerDriver struct {
 	logger        *logging.FtpCommandLogger
 }
 
-func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory, throttle *throttle.FtpThrottle, logger *logging.FtpCommandLogger) (*FtpServerDriver, error) {
+func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory, throttle *throttle.FtpThrottle, logger *logging.FtpCommandLogger, ls *detect.MultiProtocolListener) (*FtpServerDriver, error) {
+	multiProtocolEnabled := ls.ProtocolEnabled("ftp")
+	if !c.FtpServer.Enabled && !multiProtocolEnabled {
+		return nil, nil
+	}
+
 	cert, err := getSelfSignedCert(c)
 	if err != nil {
 		return nil, err
@@ -31,6 +38,13 @@ func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory, throttle *
 	lowerRange, upperRange, err := config.ParsePortRange(c.FtpServer.PassivePortRange)
 	if err != nil {
 		return nil, err
+	}
+
+	var listener net.Listener = nil
+	listenerAddr := fmt.Sprintf("%s:%d", c.FtpServer.Host, c.FtpServer.Port)
+	if multiProtocolEnabled {
+		listener = ls.GetListenerForProtocol("ftp")
+		listenerAddr = ""
 	}
 
 	return &FtpServerDriver{
@@ -51,8 +65,11 @@ func NewFtpServerDriver(c *config.Config, cf *FtpClientDriverFactory, throttle *
 			DisableMLST: false,
 			DisableMFMT: false,
 
+			// Listener set
+			ListenAddr: listenerAddr,
+			Listener:   listener,
+
 			// Connection port range
-			ListenAddr: fmt.Sprintf("%s:%d", c.FtpServer.Host, c.FtpServer.Port),
 			PassiveTransferPortRange: &ftpserver.PortRange{
 				Start: lowerRange,
 				End:   upperRange,
