@@ -24,26 +24,25 @@ type (
 	}
 )
 
-func NewConfigGeneratorCollection() (*ConfigGeneratorCollection, error) {
+func NewConfigGeneratorCollection(logger *zap.Logger) (*ConfigGeneratorCollection, error) {
 	schemaDir, err := schemaFiles.ReadDir(schemaDir)
 
 	if err != nil {
 		return nil, err
 	}
 
-	logger := zap.L().Sugar()
 	generators := make(map[string]*chaff.RootGenerator)
 	for _, dirEntry := range schemaDir {
-		logger.Debug("Parsing Schema File", "filename", dirEntry.Name())
+		logger.Sugar().Debugw("Parsing Schema File", "filename", dirEntry.Name())
 
 		generator, err := parseSchemaFile(dirEntry)
 		if err != nil {
-			logger.Warnw("Failed to parse schema file", "filename", dirEntry.Name(), "error", err)
+			logger.Sugar().Warnw("Failed to parse schema file", "filename", dirEntry.Name(), "error", err)
 			continue
 		}
 
 		for path, err := range generator.Metadata.Errors {
-			logger.Debug("Issue when parsing schema file", "filename", dirEntry.Name(), "path", path, "error", err)
+			logger.Sugar().Debugw("Issue when parsing schema file", "filename", dirEntry.Name(), "path", path, "error", err)
 		}
 
 		generators[dirEntry.Name()] = generator

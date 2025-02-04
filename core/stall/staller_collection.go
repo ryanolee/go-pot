@@ -3,8 +3,6 @@ package stall
 import (
 	"fmt"
 	"sync"
-
-	"go.uber.org/zap"
 )
 
 // Structured map for stallers mapped by identifierAddress and Connection ID
@@ -39,7 +37,6 @@ func (c *StallerCollection) Add(staller Staller) error {
 }
 
 func (c *StallerCollection) Delete(staller Staller) {
-	zap.L().Sugar().Debugw("Deleting staller", "groupId", staller.GetIdentifier(), "id", staller.GetIdentifier())
 	c.lock.Lock()
 	defer c.lock.Unlock()
 

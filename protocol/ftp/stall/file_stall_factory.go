@@ -21,6 +21,7 @@ type (
 		stallerPool      *stall.StallerPool
 		configGenerators *generator.ConfigGeneratorCollection
 		secretGenerators *secrets.SecretGeneratorCollection
+		logger           *zap.Logger
 	}
 )
 
@@ -29,12 +30,14 @@ func NewFtpFileStallerFactory(
 	stallerPool *stall.StallerPool,
 	configGenerators *generator.ConfigGeneratorCollection,
 	secretGenerators *secrets.SecretGeneratorCollection,
+	logger *zap.Logger,
 ) *FtpFileStallerFactory {
 	return &FtpFileStallerFactory{
 		config:           config,
 		stallerPool:      stallerPool,
 		configGenerators: configGenerators,
 		secretGenerators: secretGenerators,
+		logger:           logger,
 	}
 }
 
@@ -54,7 +57,7 @@ func (f *FtpFileStallerFactory) FromName(ctx ftpserver.ClientContext, name strin
 	})
 
 	if err := f.stallerPool.Register(staller); err != nil {
-		zap.L().Warn("Failed to register staller", zap.Error(err))
+		f.logger.Warn("Failed to register staller", zap.Error(err))
 		staller.Close()
 		return nil
 	}

@@ -30,6 +30,7 @@ type (
 		coldCachePool *cache.Cache
 
 		actionDispatcher action.IBroadcastActionDispatcher
+		logger           *zap.Logger
 
 		opts *TimeoutWatcherOptions
 	}
@@ -196,7 +197,7 @@ func (t *TimeoutForIp) RecordValidTimeout(timeout time.Duration) {
 	}
 }
 
-func NewTimeoutWatcher(config *config.Config) *TimeoutWatcher {
+func NewTimeoutWatcher(config *config.Config, logger *zap.Logger) *TimeoutWatcher {
 	if !config.TimeoutWatcher.Enabled {
 		return nil
 	}
@@ -207,6 +208,7 @@ func NewTimeoutWatcher(config *config.Config) *TimeoutWatcher {
 		actionDispatcher: nil,
 		hotCachePool:     cache.New(time.Duration(twConfig.CacheHotPoolTTL)*time.Second, time.Minute),
 		coldCachePool:    cache.New(time.Duration(twConfig.CacheColdPoolTTL)*time.Second, time.Hour),
+		logger:           logger,
 
 		// Map options from config to TimeoutWatcherOptions
 		opts: &TimeoutWatcherOptions{
@@ -238,7 +240,7 @@ func (tw *TimeoutWatcher) RecordResponse(identifier string, timeout time.Duratio
 	}
 
 	if data, ok = result.(*TimeoutForIp); !ok {
-		zap.L().Sugar().Warn("Failed to cast timeout data for IP address. Resetting", "ip", identifier)
+		tw.logger.Sugar().Warn("Failed to cast timeout data for IP address. Resetting", "ip", identifier)
 		data = NewTimeoutForIp(tw.opts)
 	}
 
@@ -249,7 +251,7 @@ func (tw *TimeoutWatcher) RecordResponse(identifier string, timeout time.Duratio
 	}
 
 	if !successful && timeout > tw.opts.instantCommitThreshold {
-		zap.L().Sugar().Infow("Timeout recorded higher than instant commit threshold", "ip", identifier, "timeout", timeout)
+		tw.logger.Sugar().Infow("Timeout recorded higher than instant commit threshold", "ip", identifier, "timeout", timeout)
 		tw.CommitToColdCacheWithBroadcast(identifier, tw.opts.longestTimeout)
 		return
 	}
@@ -266,14 +268,14 @@ func (tw *TimeoutWatcher) RecordResponse(identifier string, timeout time.Duratio
 	if sd > tw.opts.sampleDeviation {
 		return
 	}
-	zap.L().Sugar().Infow("Standard deviation is low. We have probably found the timeout! Committing to cold cache", "ip", identifier, "sd", sd)
+	tw.logger.Sugar().Infow("Standard deviation is low. We have probably found the timeout! Committing to cold cache", "ip", identifier, "sd", sd)
 	avg := data.GetAverageTimeoutInSample()
 	timeoutToCommit := avg - (sd * 2)
 	if timeoutToCommit < tw.opts.lowerTimeoutBound {
 		timeoutToCommit = tw.opts.lowerTimeoutBound
 	}
 
-	zap.L().Sugar().Infow("Committed to cold cache", "ip", identifier, "timeout", timeoutToCommit)
+	tw.logger.Sugar().Infow("Committed to cold cache", "ip", identifier, "timeout", timeoutToCommit)
 	tw.CommitToColdCacheWithBroadcast(identifier, timeoutToCommit)
 }
 
@@ -310,7 +312,7 @@ func (tw *TimeoutWatcher) GetTimeout(identifier string) time.Duration {
 			return timeout
 		}
 
-		zap.L().Sugar().Warn("Failed to cast timeout data for IP address. Resetting", "ip", identifier)
+		tw.logger.Sugar().Warn("Failed to cast timeout data for IP address. Resetting", "ip", identifier)
 		tw.coldCachePool.Delete(identifier)
 	}
 
@@ -322,7 +324,7 @@ func (tw *TimeoutWatcher) GetTimeout(identifier string) time.Duration {
 	}
 
 	if data, ok = result.(*TimeoutForIp); !ok {
-		zap.L().Sugar().Warn("Failed to cast timeout data for IP address. Resetting", "ip", identifier)
+		tw.logger.Sugar().Warn("Failed to cast timeout data for IP address. Resetting", "ip", identifier)
 		data = NewTimeoutForIp(tw.opts)
 	}
 

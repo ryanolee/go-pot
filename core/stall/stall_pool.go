@@ -13,8 +13,8 @@ import (
 
 type (
 	StallerPool struct {
-		// Map of connection ID's to map to HttpStaller
 		stallers           *StallerCollection
+		logger             *zap.Logger
 		deregisterChan     chan Staller
 		stopChan           chan bool
 		maximumConnections int
@@ -26,8 +26,9 @@ type (
 	}
 )
 
-func NewStallerPool(lifecycle fx.Lifecycle, config *config.Config) *StallerPool {
+func NewStallerPool(lifecycle fx.Lifecycle, config *config.Config, logger *zap.Logger) *StallerPool {
 	pool := &StallerPool{
+		logger:             logger,
 		deregisterChan:     make(chan Staller, config.Staller.MaximumConnections),
 		stopChan:           make(chan bool),
 		stallers:           NewStallerCollection(config.Staller.GroupLimit),
@@ -40,7 +41,8 @@ func NewStallerPool(lifecycle fx.Lifecycle, config *config.Config) *StallerPool 
 			return nil
 		},
 		OnStop: func(context.Context) error {
-			pool.Stop()
+			// Top priority is to stop the pool while connections are still active
+			// so is called at top level
 			return nil
 		},
 	})
@@ -50,7 +52,7 @@ func NewStallerPool(lifecycle fx.Lifecycle, config *config.Config) *StallerPool 
 
 func (s *StallerPool) Register(staller Staller) error {
 	if s.stallers.Len() >= s.maximumConnections {
-		zap.L().Sugar().Warnw("maximum connections reached, cannot register staller")
+		s.logger.Sugar().Warnw("maximum connections reached, cannot register staller")
 		return fmt.Errorf("maximum connections reached, cannot register staller")
 	}
 
@@ -64,7 +66,7 @@ func (s *StallerPool) Register(staller Staller) error {
 	// If we fail to add a staller close it and close it and abort the registation the registration
 	if err := s.stallers.Add(staller); err != nil {
 		staller.Close()
-		zap.L().Error("failed to add staller", zap.Error(err))
+		s.logger.Error("failed to add staller", zap.Error(err))
 		return err
 	}
 
@@ -99,19 +101,17 @@ func (s *StallerPool) Start() {
 }
 
 func (s *StallerPool) Stop() {
-	zap.L().Sugar().Warnw("Stopping staller pool")
+	s.logger.Sugar().Warnw("Stopping staller pool")
 	for _, ipMap := range s.stallers.stallers {
 		for _, staller := range ipMap {
-			zap.L().Sugar().Warnw("Closing staller", "group", staller.GetGroupIdentifier(), "id", staller.GetGroupIdentifier())
+			s.logger.Sugar().Warnw("Closing staller", "group", staller.GetGroupIdentifier(), "id", staller.GetIdentifier())
 			staller.Close()
 		}
 	}
 
-	// Sometimes the deregister channel hangs
-	// @todo: Fix this
 	go (func() { s.stopChan <- true })()
 
-	zap.L().Sugar().Warnw("Stopped staller pool")
+	s.logger.Sugar().Warnw("Stopped staller pool")
 }
 
 func (s *StallerPool) StopByIdentifier(id string) {
@@ -124,7 +124,6 @@ func (s *StallerPool) Prune() {
 
 	if length > target {
 		diff := length - target
-		fmt.Println(diff)
 		s.stallers.PruneNByIdentifier(diff)
 	}
 }
