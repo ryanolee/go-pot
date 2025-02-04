@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 func getSelfSignedCert(c *config.Config) (tls.Certificate, error) {
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		fmt.Println("Failed to generate key")
 		return tls.Certificate{}, err
 	}
 

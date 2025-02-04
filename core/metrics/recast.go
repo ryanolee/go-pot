@@ -24,6 +24,7 @@ type (
 		telemetry    *Telemetry
 		shutdownChan chan bool
 		shutdowner   fx.Shutdowner
+		logger       *zap.Logger
 
 		// Internals
 		minimumRecastInterval int
@@ -32,7 +33,7 @@ type (
 	}
 )
 
-func NewRecast(lf fx.Lifecycle, shutdowner fx.Shutdowner, config *config.Config, telemetry *Telemetry) (*Recast, error) {
+func NewRecast(lf fx.Lifecycle, shutdowner fx.Shutdowner, config *config.Config, telemetry *Telemetry, logger *zap.Logger) (*Recast, error) {
 	if !config.Recast.Enabled {
 		return nil, errors.New("Recast is not enabled")
 	}
@@ -45,6 +46,7 @@ func NewRecast(lf fx.Lifecycle, shutdowner fx.Shutdowner, config *config.Config,
 		shutdownChan: make(chan bool),
 		telemetry:    telemetry,
 		shutdowner:   shutdowner,
+		logger:       logger,
 
 		minimumRecastInterval: config.Recast.MinimumRecastIntervalMin,
 		maximumRecastInterval: config.Recast.MaximumRecastIntervalMin,
@@ -74,15 +76,15 @@ func (r *Recast) StartChecking() {
 		for {
 			// Sleep for a random amount of time between the minimum and maximum recast interval
 			recastWaitTime := rand.RandomInt(r.minimumRecastInterval, r.minimumRecastInterval)
-			zap.L().Sugar().Info("Recast Waiting", "timeUntilNextCheck", recastWaitTime)
+			r.logger.Sugar().Info("Recast Waiting", "timeUntilNextCheck", recastWaitTime)
 			recastCheckDuration := time.Duration(recastWaitTime) * time.Minute
 			select {
 			case <-time.After(recastCheckDuration):
 				wastedTimeSinceLastCheck := r.telemetry.GetWastedTime() - cumulativeWastedTime
-				zap.L().Sugar().Infow("Checking if node should recast", "wastedTimeSinceLastCheck", wastedTimeSinceLastCheck, "timeWastedRatio", timeWastedRatio, "recastCheckDuration", recastCheckDuration)
+				r.logger.Sugar().Infow("Checking if node should recast", "wastedTimeSinceLastCheck", wastedTimeSinceLastCheck, "timeWastedRatio", timeWastedRatio, "recastCheckDuration", recastCheckDuration)
 
 				if wastedTimeSinceLastCheck < recastCheckDuration.Seconds()*timeWastedRatio {
-					zap.L().Sugar().Warnw("Node should recast", "wastedTimeSinceLastCheck", wastedTimeSinceLastCheck, "timeWastedRatio", timeWastedRatio, "recastCheckDuration", recastCheckDuration)
+					r.logger.Sugar().Warnw("Node should recast", "wastedTimeSinceLastCheck", wastedTimeSinceLastCheck, "timeWastedRatio", timeWastedRatio, "recastCheckDuration", recastCheckDuration)
 					if err := r.shutdowner.Shutdown(); err != nil {
 						// Not sure how to handle this error
 						return
@@ -92,7 +94,7 @@ func (r *Recast) StartChecking() {
 
 				cumulativeWastedTime = r.telemetry.GetWastedTime()
 			case <-r.shutdownChan:
-				zap.L().Sugar().Warnw("Shutting down recast checker!")
+				r.logger.Sugar().Warnw("Shutting down recast checker!")
 				return
 			}
 		}

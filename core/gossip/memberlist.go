@@ -43,6 +43,9 @@ type (
 
 		// The metadata for the current node
 		nodeInfo *NodeInfo
+
+		// Logger used for memberlist
+		logger *zap.Logger
 	}
 
 	// Metadata related to the current node
@@ -107,13 +110,14 @@ func NewMemberList(lf fx.Lifecycle, logger *zap.Logger, config *config.Config, b
 		connectionAttempts: config.Cluster.ConnectionAttempts,
 		connectionTimeout:  time.Duration(config.Cluster.ConnectionTimeout) * time.Second,
 		nodeInfo:           nodeInfo,
+		logger:             logger,
 	}
 
 	lf.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			go func() {
 				if err := memberList.Join(); err != nil {
-					zap.L().Sugar().Error("Failed to join member list", "error", err)
+					logger.Sugar().Error("Failed to join member list", "error", err)
 				}
 			}()
 			return nil
@@ -131,7 +135,7 @@ func (m *Memberlist) Join() error {
 	for i := 0; i < m.connectionAttempts; i++ {
 		nodes, err := m.client.Join(m.nodeInfo.PeerIpAddresses)
 		if err != nil && nodes == 0 {
-			zap.L().Sugar().Warnw("Failed to connect to other nodes", "err", err, "attempt", i)
+			m.logger.Sugar().Warnw("Failed to connect to other nodes", "err", err, "attempt", i)
 			time.Sleep(m.connectionTimeout)
 			continue
 		}
@@ -142,7 +146,7 @@ func (m *Memberlist) Join() error {
 		return errors.New("failed to connect to any other nodes in the cluster")
 	}
 
-	zap.L().Sugar().Infow("Connected to other nodes", "peers", m.client.NumMembers(), "ip", m.GetIpAddress())
+	m.logger.Sugar().Infow("Connected to other nodes", "peers", m.client.NumMembers(), "ip", m.GetIpAddress())
 	m.listenForBroadcastActions()
 
 	return nil
@@ -155,7 +159,7 @@ func (m *Memberlist) GetIpAddress() string {
 
 // Broadcasts a message to peer nodes in the cluster
 func (m *Memberlist) Dispatch(broadcast *action.BroadcastAction) {
-	zap.L().Sugar().Infow("Broadcasting action", "action", broadcast.Action, "data", broadcast.Data)
+	m.logger.Sugar().Infow("Broadcasting action", "action", broadcast.Action, "data", broadcast.Data)
 	m.delegate.Broadcasts.QueueBroadcast(broadcast)
 }
 
@@ -167,7 +171,7 @@ func (m *Memberlist) listenForBroadcastActions() {
 			case msg := <-m.delegate.MessageChan:
 				action, err := action.ParseBroadcastAction(msg)
 				if err != nil {
-					zap.L().Sugar().Warnw("Failed to parse broadcast action", "err", err, "data", string(msg))
+					m.logger.Sugar().Warnw("Failed to parse broadcast action", "err", err, "data", string(msg))
 					continue
 				}
 				go m.handler.Handle(action)

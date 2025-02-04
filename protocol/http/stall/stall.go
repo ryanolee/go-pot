@@ -180,7 +180,7 @@ func (s *HttpStaller) PushDataToClient(ctx context.Context, w *bufio.Writer, dat
 		case <-ctx.Done():
 			// Flush the rest of the data to the client in the case we are closing
 			if _, err := w.Write(data[i:]); err != nil {
-				zap.L().Sugar().Warn("Failed rest if data", "connId", s.id, "err", err)
+				zap.L().Sugar().Warn("Failed to write rest of data", "connId", s.id, "err", err)
 
 			}
 			w.Flush()

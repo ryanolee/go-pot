@@ -86,6 +86,13 @@ var commonFlags = flagMap{
 		configType:   "string",
 		defaultValue: defaultConfig.Logging.Path,
 	},
+	"log-level": {
+		flagName:     "log-level",
+		configKey:    "logging.level",
+		description:  "The log level to use. (Options: debug, info, warn, error)",
+		configType:   "string",
+		defaultValue: defaultConfig.Logging.Level,
+	},
 }
 
 var httpFlags = flagMap{
@@ -222,6 +229,7 @@ var ftpFlags = flagMap{
 }
 
 var startFlags = flagMap{
+	// @todo - Next Major release [Swap this to be enabled]
 	"http-disabled": {
 		flagName:     "http-disabled",
 		configKey:    "server.disable",

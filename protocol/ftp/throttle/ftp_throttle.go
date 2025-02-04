@@ -25,9 +25,10 @@ type FtpThrottle struct {
 	waitTime time.Duration
 
 	closeChannel chan bool
+	logger       *zap.Logger
 }
 
-func NewFtpThrottle(lf fx.Lifecycle, cfg *config.Config) *FtpThrottle {
+func NewFtpThrottle(lf fx.Lifecycle, cfg *config.Config, logger *zap.Logger) *FtpThrottle {
 	if !cfg.FtpServer.Enabled {
 		return nil
 	}
@@ -38,6 +39,7 @@ func NewFtpThrottle(lf fx.Lifecycle, cfg *config.Config) *FtpThrottle {
 		waitChannels:         make(map[int64][]chan bool),
 		maxPendingOperations: cfg.FtpServer.Throttle.MaxPendingOperations,
 		waitTime:             time.Millisecond * time.Duration(cfg.FtpServer.Throttle.WaitTime),
+		logger:               logger,
 	}
 
 	lf.Append(fx.Hook{
@@ -98,7 +100,7 @@ func (t *FtpThrottle) ReleasePendingProcess(id int64) {
 	waitChannel <- true
 	close(waitChannel)
 
-	zap.L().Sugar().Debug("Released pending operation for conn", "id", id)
+	t.logger.Sugar().Debug("Released pending operation for conn", "id", id)
 
 	// Remove the released operation from the list
 	t.waitChannels[id] = t.waitChannels[id][1:]
