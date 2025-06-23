@@ -3,7 +3,7 @@ package config
 import "go.uber.org/zap/zapcore"
 
 // Default configuration values for the application
-var defaultConfig = Config{
+var DefaultConfig = Config{
 	Server: serverConfig{
 		Disable:        false,
 		Port:           8080,

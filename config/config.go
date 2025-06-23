@@ -310,7 +310,7 @@ func NewConfig(cmd *cobra.Command, flagsUsed flagMap) (*Config, error) {
 	k := koanf.New(".")
 
 	// Load the default configuration
-	if err := k.Load(structs.Provider(defaultConfig, "koanf"), nil); err != nil {
+	if err := k.Load(structs.Provider(DefaultConfig, "koanf"), nil); err != nil {
 		return nil, err
 	}
 
