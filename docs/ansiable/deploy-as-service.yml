@@ -1,0 +1,102 @@
+
+- name: Deploy go-pot as a service
+  hosts: all
+  tasks:
+    - name: Create go-pot group
+      ansible.builtin.group:
+        name: go-pot
+        state: present
+
+    - name: Create go-pot user
+      ansible.builtin.user:
+        name: go-pot
+        comment: Go-Pot Service User
+        uid: 1040
+        group: go-pot
+        create_home: yes
+
+    - name: Install Service dependencies
+      ansible.builtin.package:
+        name: 
+          - curl
+          - tar
+          - iptables-persistent
+        state: latest
+
+    - name: Install go-pot
+      ansible.builtin.script: 
+        cmd: "{{playbook_dir}}/../scripts/install.sh --yes"
+
+    - name: Create IP Table rules for everything to 8080
+      ansible.builtin.iptables:
+        chain: PREROUTING
+        table: nat
+        protocol: tcp
+        destination_ports: 
+          - 80
+          - 1024:2020
+          - 2022:49999
+          - 50101:65535
+        jump: REDIRECT
+        to_ports: 8080
+        comment: "Redirect port(s) to 8080 for go-pot"
+        state: present
+     
+    - name: Create IP Table rules for proxying port 21 to 2121
+      ansible.builtin.iptables:
+        chain: PREROUTING
+        table: nat
+        protocol: tcp
+        destination_port: 21
+        jump: REDIRECT
+        to_ports: 2121
+        comment: "Redirect port 21 to 2121 for go-pot"
+        state: present
+      tags:
+        - full
+    - name: Allow traffic from 50000 to 50100
+      ansible.builtin.iptables:
+        chain: INPUT
+        table: filter
+        protocol: tcp
+        destination_port: 50000:50100
+        jump: ACCEPT
+        comment: "Allow traffic from 50000 to 50100 for go-pot"
+        state: present
+
+    - name: Save IP Table rules
+      community.general.iptables_state:
+        path: /etc/iptables/rules.v4
+        state: saved
+      tags:
+        - full
+              
+    - name: Create Systemd service
+      ansible.builtin.template:
+        src: "{{playbook_dir}}/templates/go-pot.service.j2"
+        dest: "/etc/systemd/system/go-pot.service"
+    
+    - name: Create configuration directory
+      file:
+        path: "/etc/go-pot"
+        recurse: true
+        state: directory
+
+    - name: Create go-pot configuration
+      ansible.builtin.template:
+        src: "{{playbook_dir}}/templates/config.yml.j2"
+        dest: "/etc/go-pot/config.yml"
+
+    - name: Enable go-pot service
+      ansible.builtin.systemd:
+        daemon_reload: yes
+        state: started
+        enabled: yes
+        name: go-pot
+
+  handlers:
+    - name: Reload Systemd
+      ansible.builtin.systemd:
+        daemon_reload: yes
+        state: reloaded
+        name: go-pot

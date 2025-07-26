@@ -1,0 +1,17 @@
+[Unit]
+Description=GoPot
+ConditionPathExists=/usr/local/bin/go-pot
+After=network.target
+ 
+[Service]
+Type=simple
+User=go-pot
+Group=go-pot
+Restart=on-failure
+RestartSec=10
+StartLimitIntervalSec=60
+
+ExecStart=/usr/local/bin/go-pot start --config-file /etc/go-pot/config.yml
+ 
+[Install]
+WantedBy=multi-user.target

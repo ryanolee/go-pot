@@ -1,0 +1,37 @@
+server:
+  enabled: true
+  port: 8080
+  host: 0.0.0.0
+  network: "tcp4"
+  access_log:
+    mode: "end"
+    path: ""
+    fields_to_log: "src_ip,method,path,qs,duration"
+
+logging:
+  level: debug
+  path: ""
+  startup_log_enabled: true
+
+# Staller specific configuration
+staller:
+  # The maximum number of open connections that can be made to the pot at any given time
+  maximum_connections: 200
+
+  # The transfer rate for the staller (bytes per second)
+  bytes_per_second: 8
+
+# Metric configuration for the FTP side of the staller
+ftp_server:
+
+  # If the fep server should be enabled or not
+  enabled: true
+
+  # Port the FTP server should bind to
+  port: 2121
+
+  # The host for the go pot server
+  host: 0.0.0.0
+
+  # The range passive FTP connections should be exposed on
+  passive_port_range: 50000-50100
